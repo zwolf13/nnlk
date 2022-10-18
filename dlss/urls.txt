@@ -1,0 +1,78 @@
+# Instagram
+https://www.instagram.com/cynthia_grivel,1280,1600,instagram-cynthia_grivel,instagram/cynthia_grivel
+https://www.instagram.com/mat_clemt,1280,600,instagram-mat_clemt,instagram/mat_clemt
+https://www.instagram.com/noemie_penacino,1280,600,instagram-noemie_penacino,instagram/noemie_penacino
+https://www.instagram.com/chachajor,1280,600,instagram-chachajor,instagram/chachajor
+https://www.instagram.com/karine_svreck,1280,600,instagram-karine_svreck,instagram/karine_svreck
+https://www.instagram.com/angelique_tumino,1280,600,instagram-angelique_tumino,instagram/angelique_tumino
+https://www.instagram.com/angelique_tumino1,1280,600,instagram-angelique_tumino1,instagram/angelique_tumino1
+https://www.instagram.com/cecilia_colamartino,1280,1200,instagram-cecilia_colamartino,instagram/cecilia_colamartino
+https://www.instagram.com/theuglysleeper,1280,1200,instagram-theuglysleeper,instagram/theuglysleeper
+
+# Facebook
+https://www.facebook.com/mathieu.clement.549,1280,1000,facebook-mathieu.clement,facebook/mathieu.clement
+https://www.facebook.com/skulptart,1280,1600,facebook-skulptart,facebook/skulptart
+https://www.facebook.com/chacha.jor,1280,800,facebook-chacha.jor,facebook/chacha.jor
+https://www.facebook.com/julien.pointard,1280,1000,facebook-julien.pointard,facebook/julien.pointard
+https://www.facebook.com/criquetprod,1280,1200,facebook-criquetprod,facebook/criquetprod
+
+# Dailymotion
+# https://www.dailymotion.com/search/ronfle/videos?sortBy=most_recent,1280,1800,dailymotion-ronfle
+# https://www.dailymotion.com/search/snoring/videos?sortBy=most_recent,1280,1800,dailymotion-snoring
+# https://www.dailymotion.com/search/schnarchen/videos?sortBy=most_recent,1280,1800,dailymotion-schnarchen
+
+# Vimeo
+https://vimeo.com/search/sort:latest?q=snoring,1280,1800,vimeo-snoring,vimeo/snoring
+https://vimeo.com/search/sort:latest?q=ronfle,1280,1800,vimeo-ronfle,vimeo/ronfle
+https://vimeo.com/search/sort:latest?q=schnarchen,1280,1800,vimeo-schnarchen,vimeo/schnarchen
+
+# Twitter
+https://twitter.com/search?q=snoring,1280,1800,twitter-snoring,twitter/snoring
+https://twitter.com/search?q=snoring&f=live,1280,1800,twitter-snoring_live,twitter/snoring_live
+
+# Tumblr
+https://www.tumblr.com/search/snoring,1280,1800,tumblr-snoring,tumblr/snoring
+https://www.tumblr.com/search/snoring/recent,1280,1800,tumblr-snoring_recent,tumblr/snoring_recent
+
+# Others
+http://www.dolphin2001.net/photo/galeries/galerie2/keonie,1280,1700,dolphin2001-keonie,dolphin2001/keonie
+https://viadeo.journaldunet.com/p/charlotte-joreau-2163774,1280,2300,journaldunet-charlotte_joreau,journaldunet/charlotte_joreau
+# https://fr.linkedin.com/in/charlotte-clement-joreau-36998058,1280,800,linkedin-charlotte-clement_joreau
+# https://story.snapchat.com/search?q=snoring,1280,1800,snapchat-snoring
+
+# Pinterest
+https://www.pinterest.com/skulptart/,1280,1800,pinterest-skulptart,pinterest/skulptart
+
+# Google
+https://www.google.com/search?q=charlotte+joreau,900,1200,google-charlotte_joreau,google/charlotte_joreau
+https://www.google.com/search?q=charlotte+joreau&tbs=qdr:m,900,1200,google_month-charlotte_joreau,google_month/charlotte_joreau
+https://www.google.com/search?q=charlotte+joreau&tbm=isch,1280,1200,google_img-charlotte_joreau,google_img/charlotte_joreau
+https://www.google.com/search?q=charlotte+joreau&tbm=isch&tbs=qdr:m,1280,1200,google_img_month-charlotte_joreau,google_img_month/charlotte_joreau
+https://www.google.com/search?q=charlotte+joreau&tbm=vid,800,1200,google_video-charlotte_joreau,google_video/charlotte_joreau
+https://www.google.com/search?q=charlotte+joreau&tbm=vid&tbs=qdr:m,800,800,google_video_month-charlotte_joreau,google_video_month/charlotte_joreau
+https://www.google.com/search?q=charlotte+clement,900,1200,google-charlotte_clement,google/charlotte_clement
+https://www.google.com/search?q=charlotte+clement&tbs=qdr:m,900,1200,google_month-charlotte_clement,google_month/charlotte_clement
+https://www.google.com/search?q=charlotte+clement&tbm=isch,1280,1200,google_img-charlotte_clement,google_img/charlotte_clement
+https://www.google.com/search?q=charlotte+clement&tbm=isch&tbs=qdr:m,1280,1200,google_img_month-charlotte_clement,google_img_month/charlotte_clement
+https://www.google.com/search?q=charlotte+clement&tbm=vid,800,1200,google_video-charlotte_clement,google_video/charlotte_clement
+https://www.google.com/search?q=charlotte+clement&tbm=vid&tbs=qdr:m,800,800,google_video_month-charlotte_clement,google_video_month/charlotte_clement
+https://www.google.com/search?q=keonie,900,1200,google-keonie,google/keonie
+https://www.google.com/search?q=keonie&tbs=qdr:m,900,1200,google_month-keonie,google_month/keonie
+https://www.google.com/search?q=keonie&tbm=isch,1280,1200,google_img-keonie,google_img/keonie
+https://www.google.com/search?q=keonie&tbm=isch&tbs=qdr:m,1280,1200,google_img_month-keonie,google_img_month/keonie
+https://www.google.com/search?q=keonie&tbm=vid,800,1200,google_video-keonie,google_video/keonie
+https://www.google.com/search?q=keonie&tbm=vid&tbs=qdr:m,800,800,google_video_month-keonie,google_video_month/keonie
+https://www.google.com/search?q=~girl+~snoring&tbm=isch,1280,1000,google_img-girl-snoring,google_img/girl/snoring
+https://www.google.com/search?q=~girl+~snoring&tbm=isch&tbs=qdr:m,1280,1000,google_img_month-girl-snoring,google_img_month/girl/snoring
+https://www.google.com/search?q=~girl+~snoring&tbm=vid,800,1200,google_video-girl-snoring,google_video/girl/snoring
+https://www.google.com/search?q=~girl+~snoring&tbm=vid&tbs=qdr:m,800,1200,google_video_month-girl-snoring,google_video_month/girl/snoring
+https://www.google.com/search?q=anubis+roncando,900,1200,google-anbs_rncndo,google/anbs_rncndo
+https://www.google.com/search?q=anubis+roncando&tbm=isch,1280,1200,google_img-anbs_rncndo,google_img/anbs_rncndo
+https://www.google.com/search?q=anubis+roncando&tbm=vid,800,1200,google_video-anbs_rncndo,google_video/anbs_rncndo
+
+# YouTube
+https://www.youtube.com/results?search_query=snoring&sp=CAI%253D,1280,1200,youtube-snoring,youtube/snoring
+https://www.youtube.com/results?search_query=charlotte+joreau&sp=CAI%253D,1280,1200,youtube-charlotte_joreau,youtube/charlotte_joreau
+https://www.youtube.com/results?search_query=charlotte+clement&sp=CAI%253D,1280,1200,youtube-charlotte_clement,youtube/charlotte_clement
+https://www.youtube.com/results?search_query=anubis+-"anubis+tk",1280,1000,youtube-anbs_crvnts,youtube/anbs_crvnts
+https://www.youtube.com/results?search_query=anubis+roncando&sp=CAI%253D,1280,800,youtube-anbs_crvnts_rncndo,youtube/anbs_crvnts_rncndo
