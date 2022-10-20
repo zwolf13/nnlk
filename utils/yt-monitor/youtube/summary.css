@@ -1,0 +1,21 @@
+body {
+	font-family: Arial;
+	background-color: 0D1323;
+	color: 5A77CC;
+}
+
+img {
+	width: 500px;
+	max-height: 300px;
+}
+
+a {
+	color: AC4FCA;
+}
+
+.card {
+	background-color: 17203C;
+	margin: 15px;
+	padding: 15px;
+	border-radius: 20px;
+}
