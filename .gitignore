@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# custom nnlk
+backups/
+cookies/
+*-archive.txt
+urls.txt
