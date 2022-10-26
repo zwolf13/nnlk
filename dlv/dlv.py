@@ -1,32 +1,35 @@
 # coding: utf-8
 
 import sys
+import configparser
 import logging
 import validators
 import json
 from datetime import datetime
-import youtube_dl
+from youtube_dl import YoutubeDL
 
 # TODO
 #  - Move all the logging config to a file
 #  - Add output format to StreamHandler
-#  - Add print usage
 #  - Add a way to get the status: (different script?)
 #      - Is running, cat log, entries in input urls.txt, number of failures, disk check (initial, current and final)
 #  - Make cookiefile dynamic and an optional parameter
 #  - Config number of retries
 #  - Add disk free space check
-#  - Add input URL validation
-#  - Add summary
 #  - Move write_file and loadUrls methods to a utility
+#  - Add print usage
 
 logging.basicConfig(format='%(asctime)s %(levelname)s - %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p', filename='logs/dlv.log', encoding='utf-8', level=logging.INFO)
+
 logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
-INPUT_URLS_FILE = 'urls.txt'
-BACKUP_FOLDER = 'backups'
-EXEC_TIME = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
+INPUT_URLS_FILE = None
+BACKUP_FOLDER = None
+EXEC_TIME = None
+SUCCESS = None
+FAILURES = None
+COUNTER = None
 
 YDL_OPTS = {
     'nocheckcertificate': True,
@@ -37,16 +40,40 @@ YDL_OPTS = {
     'writeinfojson': True,
     'writethumbnail': True,
     'writesubtitles': True,
-    'cookiefile': 'cookies/youtube.txt',
+    'cookiefile': 'cookies/youtube.txt', # TODO get cookies from centralized location
     'outtmpl': 'downloads/%(extractor)s/%(title)s - %(id)s.%(ext)s',
-    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0',
+    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0', # TODO this agent is to fix a TT issue
     'download_archive': 'dev-archive.txt'  # TODO the host name should be dynamic
 }
 
-def loadUrls() -> list:
-    """
-    Loads a list of URLs contained in urls.txt file
-    """
+def init() -> None:
+    """Inits script parameters"""
+    global INPUT_URLS_FILE
+    global BACKUP_FOLDER
+    global EXEC_TIME
+    global SUCCESS
+    global FAILURES
+    global COUNTER
+
+    # Loading config
+    config = configparser.ConfigParser()
+    config.read('dlv.ini')
+    dlv_params = None
+    if 'dlv_params' not in config.sections():
+        logging.error('No dlv_params config found :(')
+        sys.exit(1)
+    else:
+        dlv_params = config['dlv_params']
+
+    INPUT_URLS_FILE = 'urls.txt' # TODO This can  be an input parameter, if so override default value
+    BACKUP_FOLDER = dlv_params.get('backup_folder')
+    EXEC_TIME = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
+    SUCCESS = []
+    FAILURES = []
+    COUNTER = 0
+
+def load_urls() -> list:
+    """Loads a list of URLs contained in urls.txt file."""
     logging.info('Loading URLs...')
     urls = []
     with open(INPUT_URLS_FILE) as urls_file:
@@ -61,9 +88,7 @@ def loadUrls() -> list:
     return urls
 
 def write_file(content, folder: str, filename: str, is_json=False) -> None:
-    """
-    Writes an Object to a file system.
-    """
+    """Writes an Object to a file system."""
     logging.info(f'Saving file {filename} to folder {folder}...')
     output_text = None
 
@@ -80,7 +105,16 @@ def write_file(content, folder: str, filename: str, is_json=False) -> None:
     with open(f'{folder}/{filename}', 'w', encoding='utf-8') as f:
         f.write(output_text)
 
-urls = loadUrls()
+# TODO
+# def main():
+#     print('all starts here...')
+#
+# if __name__ == '__main__':
+#     main()
+
+init()
+
+urls = load_urls()
 if len(urls) < 1:
     logging.error('No URLs found :(')
     sys.exit(1)
@@ -89,24 +123,25 @@ else:
 
 write_file(urls, BACKUP_FOLDER, f'{EXEC_TIME}-input.txt')
 
-success = []
-failures = []
-counter = 0
-with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
+with YoutubeDL(YDL_OPTS) as ydl:
     total_urls = len(urls)
     for url in urls:
-        counter += 1
-        logging.info(f'Working on {counter} of {total_urls}: {url}')
+        COUNTER += 1
+        logging.info(f'Working on {COUNTER} of {total_urls}: {url}')
         try:
+            # TODO Refactor this to:
+            #  1. Download metadata
+            #  2. Determine extractor-specific parameters
+            #  3. Download video
             ydl.download([url])
-            success.append(url)
+            SUCCESS.append(url)
         except:
             logging.error(f"An exception occurred with url '{url}'")
-            failures.append(url)
+            FAILURES.append(url)
 
-write_file(success, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
-write_file(failures, BACKUP_FOLDER, f'{EXEC_TIME}-failures.txt')
+write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
+write_file(FAILURES, BACKUP_FOLDER, f'{EXEC_TIME}-failures.txt')
 
-logging.info(f'Success {len(success)}')
-logging.info(f'Failures {len(failures)}')
-logging.info(f'Total {counter}')
+logging.info(f'Success {len(SUCCESS)}')
+logging.info(f'Failures {len(FAILURES)}')
+logging.info(f'Total {COUNTER}')
