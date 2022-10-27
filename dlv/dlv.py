@@ -3,131 +3,153 @@
 import sys
 import configparser
 import logging
+import logging.config
 import validators
 import json
 from datetime import datetime
 from youtube_dl import YoutubeDL
 
 # TODO
-#  - Move all the logging config to a file
-#  - Add output format to StreamHandler
 #  - Add a way to get the status: (different script?)
 #      - Is running, cat log, entries in input urls.txt, number of failures, disk check (initial, current and final)
-#  - Make cookiefile dynamic and an optional parameter
-#  - Config number of retries
 #  - Add disk free space check
 #  - Move write_file and loadUrls methods to a utility
 #  - Add print usage
 
-logging.basicConfig(format='%(asctime)s %(levelname)s - %(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p', filename='logs/dlv.log', encoding='utf-8', level=logging.INFO)
+# TODO How to override log level to DEBUG on VERBOBSE?
+logging.config.fileConfig('logger.ini')
+log = logging.getLogger()
 
-logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+# Script variables
+EXEC_TIME = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
+INPUT_URLS_FILE = 'urls.txt'
+SUCCESS = []
+FAILURES = []
+COUNTER = 0
 
-INPUT_URLS_FILE = None
+# Config variables
+HOST = None
 BACKUP_FOLDER = None
-EXEC_TIME = None
-SUCCESS = None
-FAILURES = None
-COUNTER = None
+OUTPUT_FOLDER = None
 
-YDL_OPTS = {
-    'nocheckcertificate': True,
-    'format': 'best[ext=mp4]/best',
-    'nooverwrites': True,
-    'noprogress': True,
-    'restrictfilenames': True,
-    'writeinfojson': True,
-    'writethumbnail': True,
-    'writesubtitles': True,
-    'cookiefile': 'cookies/youtube.txt', # TODO get cookies from centralized location
-    'outtmpl': 'downloads/%(extractor)s/%(title)s - %(id)s.%(ext)s',
-    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0', # TODO this agent is to fix a TT issue
-    'download_archive': 'dev-archive.txt'  # TODO the host name should be dynamic
-}
 
 def init() -> None:
-    """Inits script parameters"""
-    global INPUT_URLS_FILE
+    """Initializes script parameters"""
+    log.info('Loading DLV config')
+    global HOST
     global BACKUP_FOLDER
-    global EXEC_TIME
-    global SUCCESS
-    global FAILURES
-    global COUNTER
+    global OUTPUT_FOLDER
 
-    # Loading config
     config = configparser.ConfigParser()
     config.read('dlv.ini')
     dlv_params = None
+
     if 'dlv_params' not in config.sections():
-        logging.error('No dlv_params config found :(')
+        log.error('No dlv_params config found :(')
         sys.exit(1)
     else:
         dlv_params = config['dlv_params']
 
-    INPUT_URLS_FILE = 'urls.txt' # TODO This can  be an input parameter, if so override default value
+    HOST = dlv_params.get('host')
     BACKUP_FOLDER = dlv_params.get('backup_folder')
-    EXEC_TIME = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
-    SUCCESS = []
-    FAILURES = []
-    COUNTER = 0
+    OUTPUT_FOLDER = dlv_params.get('output_folder')
+
 
 def load_urls() -> list:
     """Loads a list of URLs contained in urls.txt file."""
-    logging.info('Loading URLs...')
+    log.info('Loading URLs')
     urls = []
+
     with open(INPUT_URLS_FILE) as urls_file:
         for line in urls_file:
             url = line.strip()
             if not validators.url(url):
-                logging.warning(f'Skipping invalid URL: "{url}"')
+                log.warning(f'Skipping invalid URL: "{url}"')
             elif url in urls:
-                logging.warning(f'Skipping duplicate URL: "{url}"')
+                log.warning(f'Skipping duplicate URL: "{url}"')
             else:
                 urls.append(url)
+
     return urls
+
+
+def get_ytdl_opts() -> dict:
+    # TODO
+    #  - Load YDL_OPTS from an external file
+    #  - Make cookiefile dynamic and an optional parameter
+    #  - Config number of retries
+
+    log.info('Getting YouTubeDL options')
+
+    opts = {
+        'nocheckcertificate': True,
+        'format': 'best[ext=mp4]/best',
+        'nooverwrites': True,
+        'noprogress': True,
+        'restrictfilenames': True,
+        'writeinfojson': True,
+        'writethumbnail': True,
+        'writesubtitles': True,
+        # TODO get cookies from centralized location
+        'cookiefile': 'cookies/youtube.txt',
+        # TODO use OUTPUT_FOLDER in outtmpl
+        'outtmpl': 'downloads/%(extractor)s/%(title)s - %(id)s.%(ext)s',
+        # TODO this agent is to fix a TT issue
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0',
+        'download_archive': 'dev-archive.txt'  # TODO the host name should be dynamic
+    }
+
+    log.debug(opts)
+
+    return opts
+
 
 def write_file(content, folder: str, filename: str, is_json=False) -> None:
     """Writes an Object to a file system."""
-    logging.info(f'Saving file {filename} to folder {folder}...')
+    # TODO - Prepend EXEC_TIME to filename inside write_file rather than outside
+    log.info(f'Saving file: {filename}')
     output_text = None
 
     if is_json:
+        # TODO - Add dict type as JSON
         output_text = json.dumps(content, indent=4)
     elif isinstance(content, str):
         output_text = content
     elif isinstance(content, list):
         output_text = '\n'.join(content)
     else:
-        logging.warn(f'Content type is not recognized: {type(content)}!')
+        log.warn(f'Content type is not recognized: {type(content)}!')
         output_text = content
 
     with open(f'{folder}/{filename}', 'w', encoding='utf-8') as f:
         f.write(output_text)
 
+
 # TODO
 # def main():
-#     print('all starts here...')
+#     print('all starts here')
 #
 # if __name__ == '__main__':
 #     main()
 
+
 init()
 
+# TODO Check for an input list before loading URLs from file
 urls = load_urls()
-if len(urls) < 1:
-    logging.error('No URLs found :(')
+total_urls = len(urls)
+if total_urls < 1:
+    log.error('No URLs found :(')
     sys.exit(1)
 else:
-    logging.info(f'{len(urls)} unique URLs found')
+    log.info(f'{total_urls} unique URLs found')
 
 write_file(urls, BACKUP_FOLDER, f'{EXEC_TIME}-input.txt')
 
-with YoutubeDL(YDL_OPTS) as ydl:
-    total_urls = len(urls)
+with YoutubeDL(get_ytdl_opts()) as ydl:
     for url in urls:
         COUNTER += 1
-        logging.info(f'Working on {COUNTER} of {total_urls}: {url}')
+        log.info(f"Working on {COUNTER} of {total_urls}: '{url}'")
         try:
             # TODO Refactor this to:
             #  1. Download metadata
@@ -136,12 +158,13 @@ with YoutubeDL(YDL_OPTS) as ydl:
             ydl.download([url])
             SUCCESS.append(url)
         except:
-            logging.error(f"An exception occurred with url '{url}'")
+            log.error(f"An exception occurred with url '{url}'")
             FAILURES.append(url)
 
 write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
 write_file(FAILURES, BACKUP_FOLDER, f'{EXEC_TIME}-failures.txt')
 
-logging.info(f'Success {len(SUCCESS)}')
-logging.info(f'Failures {len(FAILURES)}')
-logging.info(f'Total {COUNTER}')
+# TODO Improve summary
+log.info(f'SUCCESS   {len(SUCCESS)}')
+log.info(f'FAILURES  {len(FAILURES)}')
+log.info(f'TOTAL     {COUNTER}')
