@@ -36,17 +36,21 @@ OUTPUT_FOLDER = None
 
 def main(argv: list[str]) -> None:
     _init()
-    # TODO - _handle_argv sets DEBUG level, _init() won't be included!
     urls = _handle_argv(argv)
     if not urls:
         urls = load_urls()
+    write_file(urls, BACKUP_FOLDER, f'{EXEC_TIME}-input.txt')
+    download_files(urls)
+    write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
+    write_file(FAILURES, BACKUP_FOLDER, f'{EXEC_TIME}-failures.txt')
+    print_summary()
 
+
+def download_files(urls: list[str]) -> None:
     total_urls = len(urls)
     if total_urls < 1:
         log.error('No URLs found :(')
         sys.exit(1)
-
-    write_file(urls, BACKUP_FOLDER, f'{EXEC_TIME}-input.txt')
 
     global COUNTER
     with YoutubeDL(_get_ytdl_opts()) as ydl:
@@ -65,13 +69,16 @@ def main(argv: list[str]) -> None:
                 log.error(f'An exception occurred with url "{url}"')
                 FAILURES.append(url)
 
-    write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
-    write_file(FAILURES, BACKUP_FOLDER, f'{EXEC_TIME}-failures.txt')
-    print_summary()
-
 
 def print_usage() -> None:
-    print('dlv.py [-i <INPUT_FILE>] [-o <OUTPUT_FILE>] [<URLs>]')
+    print('Usage: dlv.py [OPTIONS] [URLs...]')
+    print('\n')
+    print('Options:')
+    print('  --version                          Print program version and exit')
+    print('  -h, --help                         Print this help text and exit')
+    print('  -v, --verbose                      Print debugging information')
+    print('  -i, --input-file FILE_PATH         Override default input file to FILE_PATH')
+    print('  -o, --output-folder FOLDER_PATH    Override default output folder to FOLDER_PATH')
 
 
 def print_version() -> None:
@@ -80,7 +87,6 @@ def print_version() -> None:
 
 def _init() -> None:
     """Initializes default config"""
-    log.debug('Loading DLV config')
     global HOST
     global BACKUP_FOLDER
     global OUTPUT_FOLDER
@@ -103,11 +109,11 @@ def _init() -> None:
 def _handle_argv(argv: list[str]) -> list[str]:
     """Handles input parameters to override default config.
     If URLs where typed, they will be validated and a list of unique entries will be returned."""
-    log.debug('Handling input args')
+    log.debug('Handling input arguments')
 
     try:
         opts, args = getopt.getopt(
-            argv, 'hvi:o:', ['help', 'version', 'verbose', 'input-file=', 'output-file='])
+            argv, 'hvi:o:', ['help', 'version', 'verbose', 'input-file=', 'output-folder='])
     except getopt.GetoptError:
         log.error('Invalid parameters! :(')
         print_usage()
@@ -127,8 +133,10 @@ def _handle_argv(argv: list[str]) -> list[str]:
             log.info('Setting Log Level to DEBUG')
             log.setLevel(logging.DEBUG)
         elif opt in ['-i', '--input-file']:
+            log.info(f'Overriding Input File: "{arg}"')
             INPUT_URLS_FILE = arg
-        elif opt in ['-o', '--output-file']:
+        elif opt in ['-o', '--output-folder']:
+            log.info(f'Overriding Output Folder: "{arg}"')
             OUTPUT_FOLDER = arg
 
     urls = []
