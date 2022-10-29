@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import sys
+import getopt
 import configparser
 import logging
 import logging.config
@@ -21,6 +22,7 @@ logging.config.fileConfig('logger.ini')
 log = logging.getLogger()
 
 # Script variables
+VERSION = '2022.10.27-1'
 EXEC_TIME = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
 INPUT_URLS_FILE = 'urls.txt'
 SUCCESS = []
@@ -31,6 +33,10 @@ COUNTER = 0
 HOST = None
 BACKUP_FOLDER = None
 OUTPUT_FOLDER = None
+
+
+def print_usage() -> None:
+    print('dlv.py [-i <input_file>] [-o <output_file>]')
 
 
 def init() -> None:
@@ -73,70 +79,101 @@ def load_urls() -> list:
     return urls
 
 
-def get_ytdl_opts() -> dict:
-    # TODO
-    #  - Load YDL_OPTS from an external file
-    #  - Make cookiefile dynamic and an optional parameter
-    #  - Config number of retries
-
+def get_ytdl_opts(extractor=None) -> dict:
     log.info('Getting YouTubeDL options')
 
-    opts = {
-        'nocheckcertificate': True,
-        'format': 'best[ext=mp4]/best',
-        'nooverwrites': True,
-        'noprogress': True,
-        'restrictfilenames': True,
-        'writeinfojson': True,
-        'writethumbnail': True,
-        'writesubtitles': True,
-        # TODO get cookies from centralized location
-        'cookiefile': 'cookies/youtube.txt',
-        # TODO use OUTPUT_FOLDER in outtmpl
-        'outtmpl': 'downloads/%(extractor)s/%(title)s - %(id)s.%(ext)s',
-        # TODO this agent is to fix a TT issue
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0',
-        'download_archive': 'dev-archive.txt'  # TODO the host name should be dynamic
-    }
+    # TODO - Config number of retries
+    log.debug('Loading default opts')
+    opts = None
+    with open('default-opts.json') as file:
+        opts = json.load(file)
 
-    log.debug(opts)
+    log.debug('Adding dynamic opts')
+    opts['outtmpl'] = f'{OUTPUT_FOLDER}/%(extractor)s/%(title)s - %(id)s.%(ext)s'
+    opts['download_archive'] = f'{HOST}-archive.txt'
+
+    # TODO - Adding extractor-specific opts?
+    if extractor is not None:
+        log.warning(
+            f'Pending implementation: Adding extractor-specific opts for "{extractor}"')
+
+    # Make cookiefile dynamic and an optional parameter
+    # get cookies from centralized location
+    # 'cookiefile': 'cookies/youtube.txt'
+
+    log.warning('Pending implementation: Override default opts')
 
     return opts
 
 
 def write_file(content, folder: str, filename: str, is_json=False) -> None:
     """Writes an Object to a file system."""
-    # TODO - Prepend EXEC_TIME to filename inside write_file rather than outside
     log.info(f'Saving file: {filename}')
     output_text = None
 
-    if is_json:
-        # TODO - Add dict type as JSON
+    if is_json or isinstance(content, dict):
         output_text = json.dumps(content, indent=4)
     elif isinstance(content, str):
         output_text = content
     elif isinstance(content, list):
         output_text = '\n'.join(content)
     else:
-        log.warn(f'Content type is not recognized: {type(content)}!')
+        log.warning(f'Content type is not recognized: {type(content)}!')
         output_text = content
 
     with open(f'{folder}/{filename}', 'w', encoding='utf-8') as f:
         f.write(output_text)
 
 
+def print_summary() -> None:
+    log.info(f'------------------------------')
+    log.info(f'DLV VERSION    {VERSION}')
+    log.info(f'OUTPUT_FOLDER  {OUTPUT_FOLDER}')
+    log.info(f'SUCCESS        {len(SUCCESS)}')
+    log.info(f'FAILURES       {len(FAILURES)}')
+    log.info(f'TOTAL          {COUNTER}')
+    log.info(f'------------------------------')
+
+
 # TODO
 # def main():
 #     print('all starts here')
 #
-# if __name__ == '__main__':
-#     main()
+# if __name__ == "__main__":
+#    main(sys.argv[1:])
+
+
+# TODO Check for an input list before loading URLs from file
+# TODO Fix long-name opts
+# https://www.tutorialspoint.com/python/python_command_line_arguments.htm
+urls = []
+try:
+    opts, args = getopt.getopt(sys.argv[1:], 'hi:o:u:', [
+                               'input-file=', 'output-file=', 'url='])
+except getopt.GetoptError:
+    log.error('Invalid parameters! :(')
+    print_usage()
+    sys.exit(1)
+
+for opt, arg in opts:
+    if opt in ('-h', '--help'):
+        print_usage()
+        sys.exit(0)
+    elif opt in ('-i', '--input-file'):
+        inputfile = arg
+    elif opt in ('-o', '--output-file'):
+        outputfile = arg
+    elif opt in ('-u', '--url'):
+        if not validators.url(arg):
+            log.warning(f'Skipping invalid URL: "{arg}"')
+        else:
+            urls.append(arg)
 
 
 init()
+if len(urls) < 1:
+    urls = load_urls()
 
-# TODO Check for an input list before loading URLs from file
-urls = load_urls()
 total_urls = len(urls)
 if total_urls < 1:
     log.error('No URLs found :(')
@@ -154,7 +191,8 @@ with YoutubeDL(get_ytdl_opts()) as ydl:
             # TODO Refactor this to:
             #  1. Download metadata
             #  2. Determine extractor-specific parameters
-            #  3. Download video
+            #  3. Check estimated video size vs disk space
+            #  4. Download video
             ydl.download([url])
             SUCCESS.append(url)
         except:
@@ -163,8 +201,4 @@ with YoutubeDL(get_ytdl_opts()) as ydl:
 
 write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
 write_file(FAILURES, BACKUP_FOLDER, f'{EXEC_TIME}-failures.txt')
-
-# TODO Improve summary
-log.info(f'SUCCESS   {len(SUCCESS)}')
-log.info(f'FAILURES  {len(FAILURES)}')
-log.info(f'TOTAL     {COUNTER}')
+print_summary()
