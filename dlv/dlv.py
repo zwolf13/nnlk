@@ -15,7 +15,6 @@ from youtube_dl import YoutubeDL
 #  - Add a way to get the status: (different script?)
 #      - Is running, cat log, entries in input urls.txt, number of failures, disk check (initial, current and final)
 #  - Move write_file and loadUrls methods to a utility
-#  - Add print usage
 
 # TODO How to override log level to DEBUG on VERBOBSE?
 logging.config.fileConfig('logger.ini')
@@ -37,6 +36,7 @@ OUTPUT_FOLDER = None
 
 def main(argv: list[str]) -> None:
     _init()
+    # TODO - _handle_argv sets DEBUG level, _init() won't be included!
     urls = _handle_argv(argv)
     if not urls:
         urls = load_urls()
@@ -62,7 +62,7 @@ def main(argv: list[str]) -> None:
                 ydl.download([url])
                 SUCCESS.append(url)
             except:
-                log.error(f"An exception occurred with url '{url}'")
+                log.error(f'An exception occurred with url "{url}"')
                 FAILURES.append(url)
 
     write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
@@ -107,7 +107,7 @@ def _handle_argv(argv: list[str]) -> list[str]:
 
     try:
         opts, args = getopt.getopt(
-            argv, 'hi:o:', ['help', 'version', 'input-file=', 'output-file='])
+            argv, 'hvi:o:', ['help', 'version', 'verbose', 'input-file=', 'output-file='])
     except getopt.GetoptError:
         log.error('Invalid parameters! :(')
         print_usage()
@@ -117,15 +117,18 @@ def _handle_argv(argv: list[str]) -> list[str]:
     global INPUT_URLS_FILE
     global OUTPUT_FOLDER
     for opt, arg in opts:
-        if opt in ('-h', '--help'):
+        if opt in ['-h', '--help']:
             print_usage()
             sys.exit(0)
-        elif opt in ('--version'):
+        elif opt in ['--version']:
             print_version()
             sys.exit(0)
-        elif opt in ('-i', '--input-file'):
+        if opt in ['-v', '--verbose']:
+            log.info('Setting Log Level to DEBUG')
+            log.setLevel(logging.DEBUG)
+        elif opt in ['-i', '--input-file']:
             INPUT_URLS_FILE = arg
-        elif opt in ('-o', '--output-file'):
+        elif opt in ['-o', '--output-file']:
             OUTPUT_FOLDER = arg
 
     urls = []
