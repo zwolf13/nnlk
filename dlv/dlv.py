@@ -30,9 +30,11 @@ COUNTER = 0
 HOST = None
 BACKUP_FOLDER = None
 OUTPUT_FOLDER = None
+COOKIE = None
 
 
 def main(argv: list[str]) -> None:
+    """Entry point for DLV"""
     _init()
     urls = _handle_argv(argv)
     if not urls:
@@ -62,10 +64,12 @@ def download_files(urls: list[str]) -> None:
                 #  3. Check estimated video size vs disk space (add disk space check)
                 #  4. Download video
                 ydl.download([url])
-                SUCCESS.append(url)
-            except:
-                log.error(f'An exception occurred with url "{url}"')
+            except Exception as e:
+                log.error(f'An exception occurred with url "{url}":')
+                log.error(f'{e}')
                 FAILURES.append(url)
+            else:
+                SUCCESS.append(url)
 
 
 def print_usage() -> None:
@@ -77,6 +81,7 @@ def print_usage() -> None:
     print('  -v, --verbose                      Print debugging information')
     print('  -i, --input-file FILE_PATH         Override default input file to FILE_PATH')
     print('  -o, --output-folder FOLDER_PATH    Override default output folder to FOLDER_PATH')
+    print('  -c, --cookie FILE_PATH             Set the cookie file to use')
 
 
 def print_version() -> None:
@@ -107,11 +112,10 @@ def _init() -> None:
 def _handle_argv(argv: list[str]) -> list[str]:
     """Handles input parameters to override default config.
     If URLs where typed, they will be validated and a list of unique entries will be returned."""
-    log.debug('Handling input arguments')
 
     try:
         opts, args = getopt.getopt(
-            argv, 'hvi:o:', ['help', 'version', 'verbose', 'input-file=', 'output-folder='])
+            argv, 'hvi:o:c:', ['help', 'version', 'verbose', 'input-file=', 'output-folder=', 'cookie='])
     except getopt.GetoptError:
         log.error('Invalid parameters! :(')
         print_usage()
@@ -120,6 +124,7 @@ def _handle_argv(argv: list[str]) -> list[str]:
     # Overloads default config
     global INPUT_URLS_FILE
     global OUTPUT_FOLDER
+    global COOKIE
     for opt, arg in opts:
         if opt in ['-h', '--help']:
             print_usage()
@@ -127,15 +132,20 @@ def _handle_argv(argv: list[str]) -> list[str]:
         elif opt in ['--version']:
             print_version()
             sys.exit(0)
-        if opt in ['-v', '--verbose']:
+        elif opt in ['-v', '--verbose']:
             log.info('Setting Log Level to DEBUG')
             log.setLevel(logging.DEBUG)
+            for handler in log.handlers:
+                handler.setLevel(logging.DEBUG)
         elif opt in ['-i', '--input-file']:
             log.info(f'Overriding Input File: "{arg}"')
             INPUT_URLS_FILE = arg
         elif opt in ['-o', '--output-folder']:
             log.info(f'Overriding Output Folder: "{arg}"')
             OUTPUT_FOLDER = arg
+        elif opt in ['-c', '--cookie']:
+            log.info(f'Using cookie file: "{arg}"')
+            COOKIE = arg
 
     urls = []
     if args and len(args) > 0:
@@ -174,20 +184,19 @@ def _get_ytdl_opts(extractor=None) -> dict:
     with open('opts.json') as file:
         opts = json.load(file)
 
-    log.debug('Adding dynamic opts')
+    # Dynamic opts
     opts['outtmpl'] = f'{OUTPUT_FOLDER}/%(extractor)s/%(title)s - %(id)s.%(ext)s'
     opts['download_archive'] = f'{HOST}-archive.txt'
+
+    # TODO Get cookies from centralized location
+    if COOKIE:
+        log.debug(f'Adding cookie file to YTDL-OPTS: {COOKIE}')
+        opts['cookiefile'] = COOKIE
 
     # TODO - Adding extractor-specific opts?
     if extractor is not None:
         log.warning(
             f'Pending implementation: Adding extractor-specific opts for "{extractor}"')
-
-    # Make cookiefile dynamic and an optional parameter
-    # get cookies from centralized location
-    # 'cookiefile': 'cookies/youtube.txt'
-
-    log.warning('Pending implementation: Override default opts')
 
     return opts
 
