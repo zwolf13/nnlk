@@ -93,17 +93,17 @@ def _init() -> None:
 
     config = configparser.ConfigParser()
     config.read('dlv.ini')
-    dlv_params = None
+    default = None
 
-    if 'dlv_params' not in config.sections():
-        log.error('No dlv_params config found :(')
+    if 'default' not in config.sections():
+        log.error('No default config found :(')
         sys.exit(1)
     else:
-        dlv_params = config['dlv_params']
+        default = config['default']
 
-    HOST = dlv_params.get('host')
-    BACKUP_FOLDER = dlv_params.get('backup_folder')
-    OUTPUT_FOLDER = dlv_params.get('output_folder')
+    HOST = default.get('host')
+    BACKUP_FOLDER = default.get('backup_folder')
+    OUTPUT_FOLDER = default.get('output_folder')
 
 
 def _handle_argv(argv: list[str]) -> list[str]:
@@ -173,7 +173,7 @@ def load_urls() -> list[str]:
 def _get_ytdl_opts(extractor=None) -> dict:
     log.debug('Getting YouTubeDL options')
     opts = None
-    with open('default-opts.json') as file:
+    with open('opts.json') as file:
         opts = json.load(file)
 
     log.debug('Adding dynamic opts')
