@@ -4,3 +4,4 @@ logs/
 backups/
 cookies/
 dlv/urls.txt
+dlv/dlv.ini
