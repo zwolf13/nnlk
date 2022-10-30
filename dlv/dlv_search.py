@@ -36,7 +36,7 @@ def dlv_search(query: str = None, type: str = None) -> dict[str, any]:
                 'name': path.name
             }
             results.append(file)
-
+    # TODO return only results or error, other props should be set in dlv-ws
     return {
         'status': status,
         'error': error,
