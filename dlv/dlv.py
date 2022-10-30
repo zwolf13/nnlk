@@ -19,7 +19,7 @@ logging.config.fileConfig('logger.ini')
 log = logging.getLogger()
 
 # Script variables
-VERSION = '2022.10.27-1'
+VERSION = '2022.10.29-1'
 EXEC_TIME = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
 INPUT_URLS_FILE = 'urls.txt'
 SUCCESS = []
