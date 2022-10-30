@@ -3,5 +3,6 @@
 logs/
 backups/
 cookies/
+__pycache__/
 dlv/urls.txt
 dlv/dlv.ini
