@@ -14,9 +14,7 @@ from youtube_dl import YoutubeDL
 # TODO
 #  - Add a way to get the status: (different script?)
 #      - Is running, cat log, entries in input urls.txt, number of failures, disk check (initial, current and final)
-#  - Move write_file and load_urls methods to a utility
 
-# TODO How to override log level to DEBUG on VERBOBSE?
 logging.config.fileConfig('logger.ini')
 log = logging.getLogger()
 
