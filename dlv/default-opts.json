@@ -1,0 +1,11 @@
+{
+    "nocheckcertificate": true,
+    "format": "best[ext=mp4]/best",
+    "nooverwrites": true,
+    "noprogress": true,
+    "restrictfilenames": true,
+    "writeinfojson": true,
+    "writethumbnail": true,
+    "writesubtitles": true,
+    "quiet": true
+}
