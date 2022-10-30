@@ -3,7 +3,6 @@
 
 from pathlib import Path
 import re
-import json
 import logging
 import logging.config
 from .utils import load_config
@@ -12,7 +11,7 @@ logging.config.fileConfig('logger.ini')
 LOG = logging.getLogger('DLV_SEARCH')
 
 
-def dlv_search(query: str = None, type: str = None):
+def dlv_search(query: str = None, type: str = None) -> dict[str, any]:
     status = 'OK'
     pattern = None
     results = []
@@ -38,11 +37,9 @@ def dlv_search(query: str = None, type: str = None):
             }
             results.append(file)
 
-    response = {
+    return {
         'status': status,
         'error': error,
         'entries': len(results),
         'results': results
     }
-
-    return json.dumps(response, indent=4)
