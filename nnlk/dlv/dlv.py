@@ -10,6 +10,7 @@ import json
 from datetime import datetime
 from youtube_dl import YoutubeDL
 
+# TODO Find another way to do this import and be able to debug
 try:
     from utils import load_config
 except ImportError:
@@ -39,7 +40,7 @@ COOKIE = None
 
 
 def main(argv: list[str]) -> None:
-    """Entry point for DLV"""
+    """Entry point for DLV command-line"""
     _init()
     urls = _handle_argv(argv)
     if not urls:
