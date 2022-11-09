@@ -1,7 +1,13 @@
 *.log
+__pycache__/
+
+# nnlk-specific
 *-archive.txt
 logs/
 backups/
 cookies/
-dlv/urls.txt
-dlv/dlv.ini
+nnlk/dlv/urls.txt
+nnlk/dlv/dlv.ini
+
+# vscode config
+.env

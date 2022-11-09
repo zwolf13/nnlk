@@ -3,7 +3,6 @@
 
 import sys
 import getopt
-import configparser
 import logging
 import logging.config
 import validators
@@ -11,12 +10,19 @@ import json
 from datetime import datetime
 from youtube_dl import YoutubeDL
 
+# TODO Find another way to do this import and be able to debug
+try:
+    from utils import load_config
+except ImportError:
+    from .utils import load_config
+
 # TODO
 #  - Add a way to get the status: (different script?)
 #      - Is running, cat log, entries in input urls.txt, number of failures, disk check (initial, current and final)
 
+# TODO Move the logger details to utils, i.e.: LOG = utils.getLogger('DLV')
 logging.config.fileConfig('logger.ini')
-log = logging.getLogger()
+LOG = logging.getLogger('DLV')
 
 # Script variables
 VERSION = '2022.10.29-1'
@@ -30,42 +36,53 @@ COUNTER = 0
 HOST = None
 BACKUP_FOLDER = None
 OUTPUT_FOLDER = None
+COOKIE = None
 
 
 def main(argv: list[str]) -> None:
+    """Entry point for DLV command-line"""
     _init()
     urls = _handle_argv(argv)
     if not urls:
         urls = load_urls()
-    write_file(urls, BACKUP_FOLDER, f'{EXEC_TIME}-input.txt')
+
     download_files(urls)
-    write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
-    write_file(FAILURES, BACKUP_FOLDER, f'{EXEC_TIME}-failures.txt')
     print_summary()
 
 
 def download_files(urls: list[str]) -> None:
     total_urls = len(urls)
     if total_urls < 1:
-        log.error('No URLs found :(')
+        LOG.error('No URLs found :(')
         sys.exit(1)
+    else:
+        write_file(urls, BACKUP_FOLDER, f'{EXEC_TIME}-input.txt')
 
     global COUNTER
     with YoutubeDL(_get_ytdl_opts()) as ydl:
         for url in urls:
             COUNTER += 1
-            log.info(f"Working on {COUNTER} of {total_urls}: '{url}'")
+            LOG.info(f"Working on {COUNTER} of {total_urls}: '{url}'")
             try:
                 # TODO Refactor this to:
                 #  1. Download metadata
                 #  2. Determine extractor-specific parameters
                 #  3. Check estimated video size vs disk space (add disk space check)
                 #  4. Download video
+                LOG.debug(f"downloading '{url}'...")
                 ydl.download([url])
-                SUCCESS.append(url)
-            except:
-                log.error(f'An exception occurred with url "{url}"')
+            except Exception as e:
+                LOG.error(f'An exception occurred with url "{url}": "{e}"')
                 FAILURES.append(url)
+            else:
+                SUCCESS.append(url)
+
+    write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
+    write_file(FAILURES, BACKUP_FOLDER, f'{EXEC_TIME}-failures.txt')
+    # TODO
+    #  - Add verification step using SUCCESS
+    #  - Add SUCCESS details to summary
+    #  - Add check for .part .tmp files
 
 
 def print_usage() -> None:
@@ -77,10 +94,15 @@ def print_usage() -> None:
     print('  -v, --verbose                      Print debugging information')
     print('  -i, --input-file FILE_PATH         Override default input file to FILE_PATH')
     print('  -o, --output-folder FOLDER_PATH    Override default output folder to FOLDER_PATH')
+    print('  -c, --cookie FILE_PATH             Set the cookie file to use')
 
 
 def print_version() -> None:
-    print(f'DLV v{VERSION}')
+    print(VERSION)
+
+
+def get_version() -> str:
+    return VERSION
 
 
 def _init() -> None:
@@ -88,38 +110,28 @@ def _init() -> None:
     global HOST
     global BACKUP_FOLDER
     global OUTPUT_FOLDER
-
-    config = configparser.ConfigParser()
-    config.read('dlv.ini')
-    default = None
-
-    if 'default' not in config.sections():
-        log.error('No default config found :(')
-        sys.exit(1)
-    else:
-        default = config['default']
-
-    HOST = default.get('host')
-    BACKUP_FOLDER = default.get('backup_folder')
-    OUTPUT_FOLDER = default.get('output_folder')
+    config = load_config()
+    HOST = config.get('host')
+    BACKUP_FOLDER = config.get('backup_folder')
+    OUTPUT_FOLDER = config.get('output_folder')
 
 
 def _handle_argv(argv: list[str]) -> list[str]:
     """Handles input parameters to override default config.
     If URLs where typed, they will be validated and a list of unique entries will be returned."""
-    log.debug('Handling input arguments')
 
     try:
         opts, args = getopt.getopt(
-            argv, 'hvi:o:', ['help', 'version', 'verbose', 'input-file=', 'output-folder='])
+            argv, 'hvi:o:c:', ['help', 'version', 'verbose', 'input-file=', 'output-folder=', 'cookie='])
     except getopt.GetoptError:
-        log.error('Invalid parameters! :(')
+        LOG.error('Invalid parameters! :(')
         print_usage()
         sys.exit(1)
 
     # Overloads default config
     global INPUT_URLS_FILE
     global OUTPUT_FOLDER
+    global COOKIE
     for opt, arg in opts:
         if opt in ['-h', '--help']:
             print_usage()
@@ -127,15 +139,20 @@ def _handle_argv(argv: list[str]) -> list[str]:
         elif opt in ['--version']:
             print_version()
             sys.exit(0)
-        if opt in ['-v', '--verbose']:
-            log.info('Setting Log Level to DEBUG')
-            log.setLevel(logging.DEBUG)
+        elif opt in ['-v', '--verbose']:
+            LOG.info('Setting Log Level to DEBUG')
+            LOG.setLevel(logging.DEBUG)
+            for handler in LOG.handlers:
+                handler.setLevel(logging.DEBUG)
         elif opt in ['-i', '--input-file']:
-            log.info(f'Overriding Input File: "{arg}"')
+            LOG.info(f'Overriding Input File: "{arg}"')
             INPUT_URLS_FILE = arg
         elif opt in ['-o', '--output-folder']:
-            log.info(f'Overriding Output Folder: "{arg}"')
+            LOG.info(f'Overriding Output Folder: "{arg}"')
             OUTPUT_FOLDER = arg
+        elif opt in ['-c', '--cookie']:
+            LOG.info(f'Using cookie file: "{arg}"')
+            COOKIE = arg
 
     urls = []
     if args and len(args) > 0:
@@ -148,17 +165,17 @@ def _handle_argv(argv: list[str]) -> list[str]:
 def _append_url(urls: list, url: str) -> None:
     """Adds the new URL to given list if it is valid and it wasn't previously added to the list"""
     if not validators.url(url):
-        log.warning(f'Skipping invalid URL: "{url}"')
+        LOG.warning(f'Skipping invalid URL: "{url}"')
     elif url in urls:
-        log.warning(f'Skipping duplicate URL: "{url}"')
+        LOG.warning(f'Skipping duplicate URL: "{url}"')
     else:
-        log.debug(f'Appending "{url}"')
+        LOG.debug(f'Appending "{url}"')
         urls.append(url)
 
 
 def load_urls() -> list[str]:
     """Loads a list of URLs contained in urls.txt file."""
-    log.info('Loading URLs')
+    LOG.info('Loading URLs')
     urls = []
 
     with open(INPUT_URLS_FILE) as urls_file:
@@ -169,32 +186,31 @@ def load_urls() -> list[str]:
 
 
 def _get_ytdl_opts(extractor=None) -> dict:
-    log.debug('Getting YouTubeDL options')
+    LOG.debug('Getting YouTubeDL options')
     opts = None
     with open('opts.json') as file:
         opts = json.load(file)
 
-    log.debug('Adding dynamic opts')
+    # Dynamic opts
     opts['outtmpl'] = f'{OUTPUT_FOLDER}/%(extractor)s/%(title)s - %(id)s.%(ext)s'
     opts['download_archive'] = f'{HOST}-archive.txt'
 
+    # TODO Get cookies from centralized location
+    if COOKIE:
+        LOG.debug(f'Adding cookie file to YTDL-OPTS: {COOKIE}')
+        opts['cookiefile'] = COOKIE
+
     # TODO - Adding extractor-specific opts?
     if extractor is not None:
-        log.warning(
+        LOG.warning(
             f'Pending implementation: Adding extractor-specific opts for "{extractor}"')
-
-    # Make cookiefile dynamic and an optional parameter
-    # get cookies from centralized location
-    # 'cookiefile': 'cookies/youtube.txt'
-
-    log.warning('Pending implementation: Override default opts')
 
     return opts
 
 
 def write_file(content, folder: str, filename: str, is_json=False) -> None:
     """Writes an Object to a file system."""
-    log.info(f'Saving file: {filename}')
+    LOG.info(f'Saving file: {filename}')
     output_text = None
 
     if is_json or isinstance(content, dict):
@@ -204,7 +220,7 @@ def write_file(content, folder: str, filename: str, is_json=False) -> None:
     elif isinstance(content, list):
         output_text = '\n'.join(content)
     else:
-        log.warning(f'Content type is not recognized: {type(content)}!')
+        LOG.warning(f'Content type is not recognized: {type(content)}!')
         output_text = content
 
     with open(f'{folder}/{filename}', 'w', encoding='utf-8') as f:
@@ -212,13 +228,13 @@ def write_file(content, folder: str, filename: str, is_json=False) -> None:
 
 
 def print_summary() -> None:
-    log.info(f'--------------------------------------------------')
-    log.info(f'DLV VERSION    {VERSION}')
-    log.info(f'OUTPUT_FOLDER  {OUTPUT_FOLDER}')
-    log.info(f'SUCCESS        {len(SUCCESS)}')
-    log.info(f'FAILURES       {len(FAILURES)}')
-    log.info(f'TOTAL          {COUNTER}')
-    log.info(f'--------------------------------------------------')
+    LOG.info(f'--------------------------------------------------')
+    LOG.info(f'DLV VERSION    {VERSION}')
+    LOG.info(f'OUTPUT_FOLDER  {OUTPUT_FOLDER}')
+    LOG.info(f'SUCCESS        {len(SUCCESS)}')
+    LOG.info(f'FAILURES       {len(FAILURES)}')
+    LOG.info(f'TOTAL          {COUNTER}')
+    LOG.info(f'--------------------------------------------------')
 
 
 if __name__ == "__main__":
