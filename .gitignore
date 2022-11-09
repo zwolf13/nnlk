@@ -7,5 +7,5 @@ logs/
 backups/
 cookies/
 dlv/urls.txt
-dlv/dlv.ini
+nnlk/dlv/dlv.ini
 .env
