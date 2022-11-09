@@ -6,6 +6,8 @@ __pycache__/
 logs/
 backups/
 cookies/
-dlv/urls.txt
+nnlk/dlv/urls.txt
 nnlk/dlv/dlv.ini
+
+# vscode config
 .env
