@@ -44,10 +44,8 @@ def main(argv: list[str]) -> None:
     urls = _handle_argv(argv)
     if not urls:
         urls = load_urls()
-    write_file(urls, BACKUP_FOLDER, f'{EXEC_TIME}-input.txt')
+
     download_files(urls)
-    write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
-    write_file(FAILURES, BACKUP_FOLDER, f'{EXEC_TIME}-failures.txt')
     print_summary()
 
 
@@ -56,6 +54,8 @@ def download_files(urls: list[str]) -> None:
     if total_urls < 1:
         LOG.error('No URLs found :(')
         sys.exit(1)
+    else:
+        write_file(urls, BACKUP_FOLDER, f'{EXEC_TIME}-input.txt')
 
     global COUNTER
     with YoutubeDL(_get_ytdl_opts()) as ydl:
@@ -75,6 +75,13 @@ def download_files(urls: list[str]) -> None:
                 FAILURES.append(url)
             else:
                 SUCCESS.append(url)
+
+    write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
+    write_file(FAILURES, BACKUP_FOLDER, f'{EXEC_TIME}-failures.txt')
+    # TODO
+    #  - Add verification step using SUCCESS
+    #  - Add SUCCESS details to summary
+    #  - Add check for .part .tmp files
 
 
 def print_usage() -> None:
