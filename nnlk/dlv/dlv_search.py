@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 import logging
 import logging.config
-from .utils import load_config
+from nnlk.commons.utils import load_config
 
 logging.config.fileConfig('logger.ini')
 LOG = logging.getLogger('DLV_SEARCH')
@@ -16,7 +16,7 @@ def dlv_search(query: str = None, type: str = None) -> dict[str, any]:
     pattern = None
     results = []
     error = None
-    config = load_config()
+    config = load_config('dlv.ini')
     search_path = config.get('output_folder')
 
     # TODO validate search_path

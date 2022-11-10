@@ -9,12 +9,7 @@ import validators
 import json
 from datetime import datetime
 from youtube_dl import YoutubeDL
-
-# TODO Find another way to do this import and be able to debug
-try:
-    from utils import load_config
-except ImportError:
-    from .utils import load_config
+from nnlk.commons.utils import load_config
 
 # TODO
 #  - Add a way to get the status: (different script?)
@@ -110,7 +105,7 @@ def _init() -> None:
     global HOST
     global BACKUP_FOLDER
     global OUTPUT_FOLDER
-    config = load_config()
+    config = load_config('dlv.ini')
     HOST = config.get('host')
     BACKUP_FOLDER = config.get('backup_folder')
     OUTPUT_FOLDER = config.get('output_folder')
@@ -230,6 +225,7 @@ def write_file(content, folder: str, filename: str, is_json=False) -> None:
 def print_summary() -> None:
     LOG.info(f'--------------------------------------------------')
     LOG.info(f'DLV VERSION    {VERSION}')
+    LOG.info(f'BACKUP_FOLDER  {BACKUP_FOLDER}')
     LOG.info(f'OUTPUT_FOLDER  {OUTPUT_FOLDER}')
     LOG.info(f'SUCCESS        {len(SUCCESS)}')
     LOG.info(f'FAILURES       {len(FAILURES)}')
