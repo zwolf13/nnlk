@@ -4,7 +4,7 @@
 from flask import Flask, request
 # https://docs.python.org/3/reference/import.html?highlight=relative%20imports#package-relative-imports
 from nnlk.dlv.dlv import main
-from nnlk.dlv.finder import search
+import nnlk.dlv.finder as finder
 
 # https://flask.palletsprojects.com/
 app = Flask(__name__)
@@ -35,4 +35,4 @@ def test() -> dict[str, str]:
 @app.route('/dlv/search', methods=['GET'])
 def search() -> dict[str, any]:
     # TODO status, error and entries should be set here
-    return search(request.args.get('query'))
+    return finder.search(request.args.get('query'))
