@@ -3,8 +3,8 @@
 
 from flask import Flask, request
 # https://docs.python.org/3/reference/import.html?highlight=relative%20imports#package-relative-imports
-from .dlv import main, get_version
-from .dlv_search import dlv_search
+from nnlk.dlv.dlv import main, get_version
+from nnlk.dlv.finder import search
 
 # https://flask.palletsprojects.com/
 app = Flask(__name__)
@@ -35,4 +35,4 @@ def test() -> dict[str, str]:
 @app.route('/dlv/search', methods=['GET'])
 def search() -> dict[str, any]:
     # TODO status, error and entries should be set here
-    return dlv_search(query=request.args.get('query'), type=request.args.get('type'))
+    return search(request.args.get('query'))
