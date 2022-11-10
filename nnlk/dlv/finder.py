@@ -37,8 +37,7 @@ def main(argv: list[str]) -> None:
     elif response.get('entries', 0) < 1:
         LOG.info(f'No results found for: "{QUERY}" :(')
     else:
-        for result in response.get('results'):
-            print(result.get('name'))
+        pring_results(response)
 
 
 def _init() -> None:
@@ -121,6 +120,13 @@ def search(query) -> dict[str, any]:
         'entries': len(results),
         'results': results
     }
+
+
+def pring_results(response: dict[str, any]) -> None:
+    # TODO Documentation
+    for result in response.get('results'):
+        print(result.get('name'))
+
 
 
 if __name__ == "__main__":
