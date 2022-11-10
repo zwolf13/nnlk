@@ -20,7 +20,6 @@ logging.config.fileConfig('logger.ini')
 LOG = logging.getLogger('DLV')
 
 # Script variables
-VERSION = '2022.10.29-1'
 EXEC_TIME = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
 INPUT_URLS_FILE = 'urls.txt'
 SUCCESS = []
@@ -28,6 +27,7 @@ FAILURES = []
 COUNTER = 0
 
 # Config variables
+VERSION = None
 HOST = None
 BACKUP_FOLDER = None
 OUTPUT_FOLDER = None
@@ -96,16 +96,14 @@ def print_version() -> None:
     print(VERSION)
 
 
-def get_version() -> str:
-    return VERSION
-
-
 def _init() -> None:
     """Initializes default config"""
+    global VERSION
     global HOST
     global BACKUP_FOLDER
     global OUTPUT_FOLDER
     config = load_config('dlv.ini')
+    VERSION = config.get('version')
     HOST = config.get('host')
     BACKUP_FOLDER = config.get('backup_folder')
     OUTPUT_FOLDER = config.get('output_folder')
@@ -122,6 +120,11 @@ def _handle_argv(argv: list[str]) -> list[str]:
         LOG.error('Invalid parameters! :(')
         print_usage()
         sys.exit(1)
+
+    # TODO
+    #  - Add download metadata only option
+    #  - Add force download option
+    #  - Add a way to register externally downloaded videos (like using dwhelper)
 
     # Overloads default config
     global INPUT_URLS_FILE
