@@ -81,6 +81,7 @@ def download_files(urls: list[str]) -> None:
 
 
 def print_usage() -> None:
+    print(f'DLV version {VERSION}')
     print('Usage: dlv.py [OPTIONS] [URLs...]')
     print('\n')
     print('Options:')
