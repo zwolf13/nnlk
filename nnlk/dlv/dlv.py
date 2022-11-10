@@ -148,6 +148,8 @@ def _handle_argv(argv: list[str]) -> list[str]:
         elif opt in ['-c', '--cookie']:
             LOG.info(f'Using cookie file: "{arg}"')
             COOKIE = arg
+        else:
+            LOG.warn(f'Ignoring unknown parameter: "{opt}"="{arg}"')
 
     urls = []
     if args and len(args) > 0:
