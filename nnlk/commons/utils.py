@@ -8,7 +8,7 @@ import configparser
 logging.config.fileConfig('logger.ini')
 log = logging.getLogger('UTILS')
 
-def load_config(section = 'default', file = 'dlv.ini'):
+def load_config(file, section = 'default'):
     section_config = None
     config = configparser.ConfigParser()
     config.read(file)

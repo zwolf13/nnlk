@@ -9,12 +9,7 @@ import validators
 import json
 from datetime import datetime
 from youtube_dl import YoutubeDL
-
-# TODO Find another way to do this import and be able to debug
-try:
-    from utils import load_config
-except ImportError:
-    from .utils import load_config
+from nnlk.commons.utils import load_config
 
 # TODO
 #  - Add a way to get the status: (different script?)
@@ -25,7 +20,6 @@ logging.config.fileConfig('logger.ini')
 LOG = logging.getLogger('DLV')
 
 # Script variables
-VERSION = '2022.10.29-1'
 EXEC_TIME = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
 INPUT_URLS_FILE = 'urls.txt'
 SUCCESS = []
@@ -33,6 +27,7 @@ FAILURES = []
 COUNTER = 0
 
 # Config variables
+VERSION = None
 HOST = None
 BACKUP_FOLDER = None
 OUTPUT_FOLDER = None
@@ -101,16 +96,14 @@ def print_version() -> None:
     print(VERSION)
 
 
-def get_version() -> str:
-    return VERSION
-
-
 def _init() -> None:
     """Initializes default config"""
+    global VERSION
     global HOST
     global BACKUP_FOLDER
     global OUTPUT_FOLDER
-    config = load_config()
+    config = load_config('dlv.ini')
+    VERSION = config.get('version')
     HOST = config.get('host')
     BACKUP_FOLDER = config.get('backup_folder')
     OUTPUT_FOLDER = config.get('output_folder')
@@ -127,6 +120,11 @@ def _handle_argv(argv: list[str]) -> list[str]:
         LOG.error('Invalid parameters! :(')
         print_usage()
         sys.exit(1)
+
+    # TODO
+    #  - Add download metadata only option
+    #  - Add force download option
+    #  - Add a way to register externally downloaded videos (like using dwhelper)
 
     # Overloads default config
     global INPUT_URLS_FILE
@@ -153,6 +151,8 @@ def _handle_argv(argv: list[str]) -> list[str]:
         elif opt in ['-c', '--cookie']:
             LOG.info(f'Using cookie file: "{arg}"')
             COOKIE = arg
+        else:
+            LOG.warn(f'Ignoring unknown parameter: "{opt}"="{arg}"')
 
     urls = []
     if args and len(args) > 0:
@@ -230,6 +230,7 @@ def write_file(content, folder: str, filename: str, is_json=False) -> None:
 def print_summary() -> None:
     LOG.info(f'--------------------------------------------------')
     LOG.info(f'DLV VERSION    {VERSION}')
+    LOG.info(f'BACKUP_FOLDER  {BACKUP_FOLDER}')
     LOG.info(f'OUTPUT_FOLDER  {OUTPUT_FOLDER}')
     LOG.info(f'SUCCESS        {len(SUCCESS)}')
     LOG.info(f'FAILURES       {len(FAILURES)}')
