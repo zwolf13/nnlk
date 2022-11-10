@@ -3,7 +3,7 @@
 
 from flask import Flask, request
 # https://docs.python.org/3/reference/import.html?highlight=relative%20imports#package-relative-imports
-from nnlk.dlv.dlv import main, get_version
+from nnlk.dlv.dlv import main
 from nnlk.dlv.finder import search
 
 # https://flask.palletsprojects.com/
@@ -21,7 +21,7 @@ app = Flask(__name__)
 
 @app.route('/dlv/version', methods=['GET'])
 def status() -> dict:
-    return {'version': get_version()}
+    return {'version': 'TODO - Return version from .ini file'}
 
 
 @app.route('/dlv/download', methods=['GET'])
