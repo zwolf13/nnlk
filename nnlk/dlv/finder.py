@@ -8,10 +8,9 @@ import re
 import logging
 import logging.config
 from datetime import datetime
-from nnlk.commons.utils import load_config
+import nnlk.commons.utils as utils
 
-logging.config.fileConfig('logger.ini')
-LOG = logging.getLogger('FINDER')
+LOG = utils.get_logger('FINDER')
 
 # Script constans
 OK = 'OK'
@@ -43,7 +42,7 @@ def main(argv: list[str]) -> None:
 def _init() -> None:
     """Initializes default config"""
     global HOST
-    config = load_config('dlv.ini')
+    config = utils.load_config()
     HOST = config.get('host')
 
 
@@ -93,8 +92,8 @@ def search(query) -> dict[str, any]:
     pattern = None
     results = []
     error = None
-    config = load_config('dlv.ini') # TODO move this to _init
-    search_path = config.get('output_folder') # TODO move this to _init
+    config = utils.load_config()  # TODO move this to _init
+    search_path = config.get('output_folder')  # TODO move this to _init
 
     # TODO validate search_path
 
@@ -105,12 +104,17 @@ def search(query) -> dict[str, any]:
         LOG.error(f'An exception occurred with query "{query}": "{e}"')
         status = ERROR
         error = str(e)
+        # TODO If error, can't continue
 
     for path in Path(search_path).rglob('*'):
         if path.is_file() and re.search(pattern, path.name):
-            # TODO Add more properties to file
+            stat = path.stat()
             file = {
-                'name': path.name
+                'name': path.name,
+                'suffix': path.suffix,
+                'path': str(path.parent),
+                'size': stat.st_size,
+                'created': datetime.fromtimestamp(stat.st_ctime).strftime('%m/%d/%Y %H:%M:%S')
             }
             results.append(file)
     # TODO return only results or error, other props should be set in dlv-ws
@@ -123,10 +127,14 @@ def search(query) -> dict[str, any]:
 
 
 def pring_results(response: dict[str, any]) -> None:
-    # TODO Documentation
+    # TODO
+    #  - Documentation
+    #  - Fix UTF-8 print in Widows:
+    #      sys.stdout.reconfigure(encoding='utf-8')
+    #      result.get('name').encode('utf-8')
+    #      Run CHCP 65001 in cmd
     for result in response.get('results'):
         print(result.get('name'))
-
 
 
 if __name__ == "__main__":

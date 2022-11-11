@@ -9,15 +9,13 @@ import validators
 import json
 from datetime import datetime
 from youtube_dl import YoutubeDL
-from nnlk.commons.utils import load_config
+import nnlk.commons.utils as utils
 
 # TODO
 #  - Add a way to get the status: (different script?)
 #      - Is running, cat log, entries in input urls.txt, number of failures, disk check (initial, current and final)
 
-# TODO Move the logger details to utils, i.e.: LOG = utils.getLogger('DLV')
-logging.config.fileConfig('logger.ini')
-LOG = logging.getLogger('DLV')
+LOG = utils.get_logger('DLV')
 
 # Script variables
 EXEC_TIME = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
@@ -103,7 +101,7 @@ def _init() -> None:
     global HOST
     global BACKUP_FOLDER
     global OUTPUT_FOLDER
-    config = load_config('dlv.ini')
+    config = utils.load_config()
     VERSION = config.get('version')
     HOST = config.get('host')
     BACKUP_FOLDER = config.get('backup_folder')
