@@ -10,6 +10,7 @@ import json
 from datetime import datetime
 from youtube_dl import YoutubeDL
 import nnlk.commons.utils as utils
+import nnlk.dlv.finder as finder
 
 # TODO
 #  - Add a way to get the status: (different script?)
@@ -35,12 +36,14 @@ COOKIE = None
 def main(argv: list[str]) -> None:
     """Entry point for DLV command-line"""
     _init()
+    LOG.info(f'= NEW DOWNLOAD ===================================')
     urls = _handle_argv(argv)
     if not urls:
         urls = load_urls()
-
     download_files(urls)
+    verify_downloads()
     print_summary()
+    LOG.info(f'==================================================')
 
 
 def download_files(urls: list[str]) -> None:
@@ -52,6 +55,8 @@ def download_files(urls: list[str]) -> None:
         write_file(urls, BACKUP_FOLDER, f'{EXEC_TIME}-input.txt')
 
     global COUNTER
+    global SUCCESS
+    global FAILURES
     with YoutubeDL(_get_ytdl_opts()) as ydl:
         for url in urls:
             COUNTER += 1
@@ -72,10 +77,79 @@ def download_files(urls: list[str]) -> None:
 
     write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
     write_file(FAILURES, BACKUP_FOLDER, f'{EXEC_TIME}-failures.txt')
+
+
+def verify_downloads() -> None:
     # TODO
-    #  - Add verification step using SUCCESS
-    #  - Add SUCCESS details to summary
-    #  - Add check for .part .tmp files
+    #  - Check for: .part .tmp *temp.* missing files missing suffix
+    #  - Find same size files
+
+    # Currently NNLK suffixes include:
+    # .m4a          AUDIO
+    # .mp3          AUDIO
+    # .wav          AUDIO
+    # .jpeg         IMAGE
+    # .jpg          IMAGE
+    # .gif          IMAGE
+    # .png          IMAGE
+    # .webp         IMAGE
+    # .JPG          IMAGE
+    # .mp4          VIDEO
+    # .PNG          IMAGE
+    # .db           SYSTEM
+    # .wmv          VIDEO
+    # .webm         VIDEO
+    # .dtrashinfo   SYSTEM
+    # .swf          VIDEO
+    # .psd
+    # .cpd
+    # .xspf
+    # .m3u          PLAYLIST
+    # .mkv          VIDEO
+    # .mov          VIDEO
+    # .avi          VIDEO
+    # .json         TEXT
+    # .flv          VIDEO
+    # .asx
+    # .3gpp2
+    # .mpg          VIDEO
+    # .MOV          VIDEO
+    # .txt          TEXT
+    # .m4v
+    # .ram
+    # .asf
+    # .ts           VIDEO
+    # .image        IMAGE
+    # .VOB
+    # .3gp          VIDEO
+    # .part         ???
+    # .srt          TEXT
+
+    # Getting all downloaded files
+    finder._init()
+    results = finder.search()
+
+    suffixes = []
+    sizes = []
+    VALID_SUFFIXES = []
+    INVALID_SUFFIXES = ['.part', '.db']
+    same_size_files = []
+    for result in results:
+        suffix = result.get('suffix')
+        size = result.get('size')
+
+        if suffix not in suffixes:
+            suffixes.append(suffix)
+            print(suffix)
+        
+        if suffix in INVALID_SUFFIXES:
+            print("")
+
+        if size not in sizes:
+            sizes.append(size)
+        else:
+            same_size_files.append(result.get('name'))
+            # print(result.get('name'))
 
 
 def print_usage() -> None:
@@ -227,14 +301,20 @@ def write_file(content, folder: str, filename: str, is_json=False) -> None:
 
 
 def print_summary() -> None:
-    LOG.info(f'--------------------------------------------------')
+    global VERSION
+    global BACKUP_FOLDER
+    global OUTPUT_FOLDER
+    global SUCCESS
+    global FAILURES
+    global COUNTER
+
+    LOG.info(f'- SUMMARY ----------------------------------------')
     LOG.info(f'DLV VERSION    {VERSION}')
     LOG.info(f'BACKUP_FOLDER  {BACKUP_FOLDER}')
     LOG.info(f'OUTPUT_FOLDER  {OUTPUT_FOLDER}')
     LOG.info(f'SUCCESS        {len(SUCCESS)}')
     LOG.info(f'FAILURES       {len(FAILURES)}')
     LOG.info(f'TOTAL          {COUNTER}')
-    LOG.info(f'--------------------------------------------------')
 
 
 if __name__ == "__main__":
