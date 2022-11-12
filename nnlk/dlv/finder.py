@@ -12,38 +12,35 @@ import nnlk.commons.utils as utils
 
 LOG = utils.get_logger('FINDER')
 
-# Script constans
-OK = 'OK'
-ERROR = 'ERROR'
-
 # Script variables
 QUERY = None
-EXEC_TIME = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
+# TODO Create a settings file?
+EXEC_TIME = datetime.now().strftime('%Y.%m.%d_%H.%M.%S')
 
 # Config variables
 HOST = None
+SEARCH_PATH = None
 
 
 def main(argv: list[str]) -> None:
     """Entry point for FINDER command-line"""
     _init()
     _handle_argv(argv)
-    response = search(QUERY)
+    results = search(QUERY)
 
-    if response.get('status') == ERROR:
-        LOG.error(f'An error occured while searching for: "{QUERY}" :(')
-        LOG.error(response.get('error'))
-    elif response.get('entries', 0) < 1:
+    if len(results) < 1:
         LOG.info(f'No results found for: "{QUERY}" :(')
     else:
-        pring_results(response)
+        print_results(results)
 
 
 def _init() -> None:
-    """Initializes default config"""
+    """Initializes default script config"""
     global HOST
+    global SEARCH_PATH
     config = utils.load_config()
     HOST = config.get('host')
+    SEARCH_PATH = config.get('output_folder')
 
 
 def _handle_argv(argv: list[str]) -> None:
@@ -87,53 +84,44 @@ def print_usage() -> None:
     print('  -v, --verbose                      Print debugging information')
 
 
-def search(query) -> dict[str, any]:
-    status = OK
+def search(query = '.') -> list[dict[str, any]]:
+    # TODO - Add the capability of override default search directory (SEARCH_PATH)
+    global SEARCH_PATH
     pattern = None
     results = []
-    error = None
-    config = utils.load_config()  # TODO move this to _init
-    search_path = config.get('output_folder')  # TODO move this to _init
+    LOG.debug(f'Searching for "{query}" in "{SEARCH_PATH}"')
 
-    # TODO validate search_path
-
-    LOG.debug(f'Searching for "{query}" in "{search_path}"')
     try:
         pattern = re.compile(query, re.IGNORECASE)
     except Exception as e:
-        LOG.error(f'An exception occurred with query "{query}": "{e}"')
-        status = ERROR
-        error = str(e)
-        # TODO If error, can't continue
+        LOG.error(f'Invalid query "{query}": "{e}" :(')
+    else:
+        for path in Path(SEARCH_PATH).rglob('*'):
+            if path.is_file() and re.search(pattern, path.name):
+                results.append(build_result(path))
 
-    for path in Path(search_path).rglob('*'):
-        if path.is_file() and re.search(pattern, path.name):
-            stat = path.stat()
-            file = {
-                'name': path.name,
-                'suffix': path.suffix,
-                'path': str(path.parent),
-                'size': stat.st_size,
-                'created': datetime.fromtimestamp(stat.st_ctime).strftime('%m/%d/%Y %H:%M:%S')
-            }
-            results.append(file)
-    # TODO return only results or error, other props should be set in dlv-ws
+    return results
+
+
+def build_result(path: Path) -> dict[str, any]:
+    stat = path.stat()
     return {
-        'status': status,
-        'error': error,
-        'entries': len(results),
-        'results': results
+        'name': path.name,
+        'suffix': path.suffix,
+        'path': str(path.parent),
+        'size': stat.st_size,
+        'created': datetime.fromtimestamp(stat.st_ctime).strftime('%m/%d/%Y %H:%M:%S')
     }
 
 
-def pring_results(response: dict[str, any]) -> None:
+def print_results(results: list) -> None:
     # TODO
     #  - Documentation
     #  - Fix UTF-8 print in Widows:
     #      sys.stdout.reconfigure(encoding='utf-8')
     #      result.get('name').encode('utf-8')
     #      Run CHCP 65001 in cmd
-    for result in response.get('results'):
+    for result in results:
         print(result.get('name'))
 
 
