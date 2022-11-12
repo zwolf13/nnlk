@@ -9,24 +9,28 @@ import logging
 import logging.config
 from datetime import datetime
 import nnlk.commons.utils as utils
+from nnlk.commons.constants import UNDERSCORE_DATE
 
 LOG = utils.get_logger('FINDER')
 
 # Script variables
+EXEC_TIME = datetime.now().strftime(UNDERSCORE_DATE)
 QUERY = None
-# TODO Create a settings file?
-EXEC_TIME = datetime.now().strftime('%Y.%m.%d_%H.%M.%S')
+SEARCH_PATH = None
 
 # Config variables
 HOST = None
-SEARCH_PATH = None
+DEFAULT_QUERY = '.'
+DEFAULT_SEARCH_PATH = None
 
 
 def main(argv: list[str]) -> None:
     """Entry point for FINDER command-line"""
+    global QUERY
+    global SEARCH_PATH
     _init()
     _handle_argv(argv)
-    results = search(QUERY)
+    results = search(QUERY, SEARCH_PATH)
 
     if len(results) < 1:
         LOG.info(f'No results found for: "{QUERY}" :(')
@@ -37,15 +41,19 @@ def main(argv: list[str]) -> None:
 def _init() -> None:
     """Initializes default script config"""
     global HOST
-    global SEARCH_PATH
+    global DEFAULT_SEARCH_PATH
     config = utils.load_config()
     HOST = config.get('host')
-    SEARCH_PATH = config.get('output_folder')
+    DEFAULT_SEARCH_PATH = config.get('output_folder')
 
 
 def _handle_argv(argv: list[str]) -> None:
+    global SEARCH_PATH
+    global QUERY
+
     try:
-        opts, args = getopt.getopt(argv, 'hv', ['help', 'verbose'])
+        opts, args = getopt.getopt(
+            argv, 'hvp:', ['help', 'verbose', 'search-path='])
     except getopt.GetoptError:
         LOG.error('Invalid parameters! :(')
         print_usage()
@@ -60,19 +68,16 @@ def _handle_argv(argv: list[str]) -> None:
             LOG.setLevel(logging.DEBUG)
             for handler in LOG.handlers:
                 handler.setLevel(logging.DEBUG)
+        elif opt in ['-p', '--search-path']:
+            SEARCH_PATH = arg
         else:
             LOG.warn(f'Ignoring unknown parameter: "{opt}"="{arg}"')
 
-    global QUERY
-    if not args:
-        LOG.error('Query parameter missing! :(')
-        print_usage()
-        sys.exit(1)
-    elif len(args) > 1:
+    if len(args) > 1:
         LOG.error('Only one query parameter is allowed! :(')
         print_usage()
         sys.exit(1)
-    else:
+    elif len(args) == 1:
         QUERY = args[0]
 
 
@@ -84,23 +89,23 @@ def print_usage() -> None:
     print('  -v, --verbose                      Print debugging information')
 
 
-def search(query = '.') -> list[dict[str, any]]:
-    # TODO - Add the capability of override default search directory (SEARCH_PATH)
-    global SEARCH_PATH
-    pattern = None
-    results = []
-    LOG.debug(f'Searching for "{query}" in "{SEARCH_PATH}"')
+def search(query=None, search_path=None) -> list[dict[str, any]]:
+    if not query:
+        query = DEFAULT_QUERY
+    if not search_path:
+        search_path = DEFAULT_SEARCH_PATH
 
     try:
         pattern = re.compile(query, re.IGNORECASE)
-    except Exception as e:
+        pure_path = Path(search_path)
+        if not pure_path.exists() or not pure_path.is_dir():
+            raise Exception()
+    except re.error as e:
         LOG.error(f'Invalid query "{query}": "{e}" :(')
+    except Exception:
+        LOG.error(f'Invalid search path: "{str(pure_path)}"')
     else:
-        for path in Path(SEARCH_PATH).rglob('*'):
-            if path.is_file() and re.search(pattern, path.name):
-                results.append(build_result(path))
-
-    return results
+        return [build_result(path) for path in pure_path.rglob('*') if path.is_file() and re.search(pattern, path.name)]
 
 
 def build_result(path: Path) -> dict[str, any]:
