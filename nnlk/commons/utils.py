@@ -3,6 +3,7 @@
 
 import os
 from pathlib import Path
+import json
 import logging
 import logging.config
 import configparser
@@ -34,3 +35,22 @@ def load_config(file=NNLK_CONFIG, section='default'):
         section_config = config[section]
 
     return section_config
+
+
+def write_file(content, folder: str, filename: str, is_json=False) -> None:
+    """Writes an Object to a file system."""
+    LOG.info(f'Saving file: {filename}')
+    output_text = None
+
+    if is_json or isinstance(content, dict):
+        output_text = json.dumps(content, indent=4)
+    elif isinstance(content, str):
+        output_text = content
+    elif isinstance(content, list):
+        output_text = '\n'.join(content)
+    else:
+        LOG.warning(f'Content type is not recognized: {type(content)}!')
+        output_text = content
+
+    with open(f'{folder}/{filename}', 'w', encoding='utf-8') as f:
+        f.write(output_text)

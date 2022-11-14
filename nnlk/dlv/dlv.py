@@ -40,8 +40,13 @@ def main(argv: list[str]) -> None:
     urls = _handle_argv(argv)
     if not urls:
         urls = load_urls()
+    # TODO - Read initial state of archive.txt
     download_files(urls)
-    verify_downloads()
+    # TODO
+    #  - Check the updated archive.txt file to determine the new entries (extractor/id)
+    #  - Find the new files based of the new archive entries
+    # verify_downloads()
+
     print_summary()
     LOG.info(f'==================================================')
 
@@ -52,7 +57,7 @@ def download_files(urls: list[str]) -> None:
         LOG.error('No URLs found :(')
         sys.exit(1)
     else:
-        write_file(urls, BACKUP_FOLDER, f'{EXEC_TIME}-input.txt')
+        utils.write_file(urls, BACKUP_FOLDER, f'{EXEC_TIME}-input.txt')
 
     global COUNTER
     global SUCCESS
@@ -75,8 +80,8 @@ def download_files(urls: list[str]) -> None:
             else:
                 SUCCESS.append(url)
 
-    write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
-    write_file(FAILURES, BACKUP_FOLDER, f'{EXEC_TIME}-failures.txt')
+    utils.write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
+    utils.write_file(FAILURES, BACKUP_FOLDER, f'{EXEC_TIME}-failures.txt')
 
 
 def verify_downloads() -> None:
@@ -279,25 +284,6 @@ def _get_ytdl_opts(extractor=None) -> dict:
             f'Pending implementation: Adding extractor-specific opts for "{extractor}"')
 
     return opts
-
-
-def write_file(content, folder: str, filename: str, is_json=False) -> None:
-    """Writes an Object to a file system."""
-    LOG.info(f'Saving file: {filename}')
-    output_text = None
-
-    if is_json or isinstance(content, dict):
-        output_text = json.dumps(content, indent=4)
-    elif isinstance(content, str):
-        output_text = content
-    elif isinstance(content, list):
-        output_text = '\n'.join(content)
-    else:
-        LOG.warning(f'Content type is not recognized: {type(content)}!')
-        output_text = content
-
-    with open(f'{folder}/{filename}', 'w', encoding='utf-8') as f:
-        f.write(output_text)
 
 
 def print_summary() -> None:
