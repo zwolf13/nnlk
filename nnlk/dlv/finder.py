@@ -52,6 +52,7 @@ def _handle_argv(argv: list[str]) -> None:
     global QUERY
 
     try:
+        # TODO - Add output file to save results into
         opts, args = getopt.getopt(
             argv, 'hvp:', ['help', 'verbose', 'search-path='])
     except getopt.GetoptError:
