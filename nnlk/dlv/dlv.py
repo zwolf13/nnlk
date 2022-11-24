@@ -10,6 +10,7 @@ import json
 from datetime import datetime
 from youtube_dl import YoutubeDL
 import nnlk.commons.utils as utils
+from nnlk.commons.constants import UNDERSCORE_DATE
 import nnlk.dlv.finder as finder
 
 # TODO
@@ -19,7 +20,7 @@ import nnlk.dlv.finder as finder
 LOG = utils.get_logger('DLV')
 
 # Script variables
-EXEC_TIME = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
+EXEC_TIME = datetime.now().strftime(UNDERSCORE_DATE)
 INPUT_URLS_FILE = 'urls.txt'
 SUCCESS = []
 FAILURES = []
@@ -54,8 +55,9 @@ def main(argv: list[str]) -> None:
 def download_files(urls: list[str]) -> None:
     total_urls = len(urls)
     if total_urls < 1:
-        LOG.error('No URLs found :(')
-        sys.exit(1)
+        msg = 'No URLs found :('
+        LOG.error(msg)
+        raise Exception(msg)
     else:
         utils.write_file(urls, BACKUP_FOLDER, f'{EXEC_TIME}-input.txt')
 
@@ -78,6 +80,7 @@ def download_files(urls: list[str]) -> None:
                 LOG.error(f'An exception occurred with url "{url}": "{e}"')
                 FAILURES.append(url)
             else:
+                LOG.info(f"Done: '{url}'")
                 SUCCESS.append(url)
 
     utils.write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
@@ -146,15 +149,15 @@ def verify_downloads() -> None:
         if suffix not in suffixes:
             suffixes.append(suffix)
             print(suffix)
-        
+
         if suffix in INVALID_SUFFIXES:
             print("")
 
         if size not in sizes:
             sizes.append(size)
         else:
-            same_size_files.append(result.get('name'))
             # print(result.get('name'))
+            same_size_files.append(result.get('name'))
 
 
 def print_usage() -> None:
