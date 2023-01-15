@@ -63,7 +63,7 @@ def download() -> dict[str, str]:
 
     try:
         url = request.args.get('url')
-        my_thread = threading.Thread(target=dlv.download_files, args=([url],))
+        my_thread = threading.Thread(target=dlv.download, args=([url],))
         my_thread.start()
     except Exception as e:
         LOG.error(f'An exception occurred with url "{url}": "{e}"')

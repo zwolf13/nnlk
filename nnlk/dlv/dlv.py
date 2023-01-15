@@ -32,6 +32,7 @@ HOST = None
 BACKUP_FOLDER = None
 OUTPUT_FOLDER = None
 COOKIE = None
+TEMPLATE = None
 
 
 def main(argv: list[str]) -> None:
@@ -42,7 +43,7 @@ def main(argv: list[str]) -> None:
     if not urls:
         urls = load_urls()
     # TODO - Read initial state of archive.txt
-    download_files(urls)
+    download(urls)
     # TODO
     #  - Check the updated archive.txt file to determine the new entries (extractor/id)
     #  - Find the new files based of the new archive entries
@@ -52,7 +53,7 @@ def main(argv: list[str]) -> None:
     LOG.info(f'==================================================')
 
 
-def download_files(urls: list[str]) -> None:
+def download(urls: list[str]) -> None:
     total_urls = len(urls)
     if total_urls < 1:
         msg = 'No URLs found :('
@@ -196,7 +197,7 @@ def _handle_argv(argv: list[str]) -> list[str]:
 
     try:
         opts, args = getopt.getopt(
-            argv, 'hvi:o:c:', ['help', 'version', 'verbose', 'input-file=', 'output-folder=', 'cookie='])
+            argv, 'hvi:o:c:t:', ['help', 'version', 'verbose', 'input-file=', 'output-folder=', 'cookie=', 'template='])
     except getopt.GetoptError:
         LOG.error('Invalid parameters! :(')
         print_usage()
@@ -211,6 +212,7 @@ def _handle_argv(argv: list[str]) -> list[str]:
     global INPUT_URLS_FILE
     global OUTPUT_FOLDER
     global COOKIE
+    global TEMPLATE
     for opt, arg in opts:
         if opt in ['-h', '--help']:
             print_usage()
@@ -232,6 +234,9 @@ def _handle_argv(argv: list[str]) -> list[str]:
         elif opt in ['-c', '--cookie']:
             LOG.info(f'Using cookie file: "{arg}"')
             COOKIE = arg
+        elif opt in ['-t', '--template']:
+            LOG.info(f'Using custom template: "{arg}"')
+            TEMPLATE = arg
         else:
             LOG.warn(f'Ignoring unknown parameter: "{opt}"="{arg}"')
 
@@ -273,8 +278,9 @@ def _get_ytdl_opts(extractor=None) -> dict:
         opts = json.load(file)
 
     # Dynamic opts
-    opts['outtmpl'] = f'{OUTPUT_FOLDER}/%(extractor)s/%(title)s - %(id)s.%(ext)s'
+    global TEMPLATE
     opts['download_archive'] = f'{HOST}-archive.txt'
+    opts['outtmpl'] = f'{OUTPUT_FOLDER}/%(extractor)s/%(title)s - %(id)s.%(ext)s' if TEMPLATE is None else f'{OUTPUT_FOLDER}/{TEMPLATE}'
 
     # TODO Get cookies from centralized location
     if COOKIE:
