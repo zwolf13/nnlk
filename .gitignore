@@ -8,6 +8,9 @@ backups/
 cookies/
 nnlk/dlv/urls.txt
 nnlk/dlv/dlv.ini
+nnlk/ig-dl/media_ids.txt
+nnlk/ig-dl/success.txt
+nnlk.ini
 
 # vscode config
 .env

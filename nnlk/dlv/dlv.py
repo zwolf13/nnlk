@@ -9,18 +9,18 @@ import validators
 import json
 from datetime import datetime
 from youtube_dl import YoutubeDL
-from nnlk.commons.utils import load_config
+import nnlk.commons.utils as utils
+from nnlk.commons.constants import UNDERSCORE_DATE
+import nnlk.dlv.finder as finder
 
 # TODO
 #  - Add a way to get the status: (different script?)
 #      - Is running, cat log, entries in input urls.txt, number of failures, disk check (initial, current and final)
 
-# TODO Move the logger details to utils, i.e.: LOG = utils.getLogger('DLV')
-logging.config.fileConfig('logger.ini')
-LOG = logging.getLogger('DLV')
+LOG = utils.get_logger('DLV')
 
 # Script variables
-EXEC_TIME = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
+EXEC_TIME = datetime.now().strftime(UNDERSCORE_DATE)
 INPUT_URLS_FILE = 'urls.txt'
 SUCCESS = []
 FAILURES = []
@@ -32,28 +32,39 @@ HOST = None
 BACKUP_FOLDER = None
 OUTPUT_FOLDER = None
 COOKIE = None
+TEMPLATE = None
 
 
 def main(argv: list[str]) -> None:
     """Entry point for DLV command-line"""
     _init()
+    LOG.info(f'= NEW DOWNLOAD ===================================')
     urls = _handle_argv(argv)
     if not urls:
         urls = load_urls()
+    # TODO - Read initial state of archive.txt
+    download(urls)
+    # TODO
+    #  - Check the updated archive.txt file to determine the new entries (extractor/id)
+    #  - Find the new files based of the new archive entries
+    # verify_downloads()
 
-    download_files(urls)
     print_summary()
+    LOG.info(f'==================================================')
 
 
-def download_files(urls: list[str]) -> None:
+def download(urls: list[str]) -> None:
     total_urls = len(urls)
     if total_urls < 1:
-        LOG.error('No URLs found :(')
-        sys.exit(1)
+        msg = 'No URLs found :('
+        LOG.error(msg)
+        raise Exception(msg)
     else:
-        write_file(urls, BACKUP_FOLDER, f'{EXEC_TIME}-input.txt')
+        utils.write_file(urls, BACKUP_FOLDER, f'{EXEC_TIME}-input.txt')
 
     global COUNTER
+    global SUCCESS
+    global FAILURES
     with YoutubeDL(_get_ytdl_opts()) as ydl:
         for url in urls:
             COUNTER += 1
@@ -70,17 +81,88 @@ def download_files(urls: list[str]) -> None:
                 LOG.error(f'An exception occurred with url "{url}": "{e}"')
                 FAILURES.append(url)
             else:
+                LOG.info(f"Done: '{url}'")
                 SUCCESS.append(url)
 
-    write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
-    write_file(FAILURES, BACKUP_FOLDER, f'{EXEC_TIME}-failures.txt')
+    utils.write_file(SUCCESS, BACKUP_FOLDER, f'{EXEC_TIME}-success.txt')
+    utils.write_file(FAILURES, BACKUP_FOLDER, f'{EXEC_TIME}-failures.txt')
+
+
+def verify_downloads() -> None:
     # TODO
-    #  - Add verification step using SUCCESS
-    #  - Add SUCCESS details to summary
-    #  - Add check for .part .tmp files
+    #  - Check for: .part .tmp *temp.* missing files missing suffix
+    #  - Find same size files
+
+    # Currently NNLK suffixes include:
+    # .m4a          AUDIO
+    # .mp3          AUDIO
+    # .wav          AUDIO
+    # .jpeg         IMAGE
+    # .jpg          IMAGE
+    # .gif          IMAGE
+    # .png          IMAGE
+    # .webp         IMAGE
+    # .JPG          IMAGE
+    # .mp4          VIDEO
+    # .PNG          IMAGE
+    # .db           SYSTEM
+    # .wmv          VIDEO
+    # .webm         VIDEO
+    # .dtrashinfo   SYSTEM
+    # .swf          VIDEO
+    # .psd
+    # .cpd
+    # .xspf
+    # .m3u          PLAYLIST
+    # .mkv          VIDEO
+    # .mov          VIDEO
+    # .avi          VIDEO
+    # .json         TEXT
+    # .flv          VIDEO
+    # .asx
+    # .3gpp2
+    # .mpg          VIDEO
+    # .MOV          VIDEO
+    # .txt          TEXT
+    # .m4v
+    # .ram
+    # .asf
+    # .ts           VIDEO
+    # .image        IMAGE
+    # .VOB
+    # .3gp          VIDEO
+    # .part         ???
+    # .srt          TEXT
+
+    # Getting all downloaded files
+    finder._init()
+    results = finder.search()
+
+    suffixes = []
+    sizes = []
+    VALID_SUFFIXES = []
+    INVALID_SUFFIXES = ['.part', '.db']
+    same_size_files = []
+    for result in results:
+        suffix = result.get('suffix')
+        size = result.get('size')
+
+        if suffix not in suffixes:
+            suffixes.append(suffix)
+            print(suffix)
+
+        if suffix in INVALID_SUFFIXES:
+            print("")
+
+        if size not in sizes:
+            sizes.append(size)
+        else:
+            # print(result.get('name'))
+            same_size_files.append(result.get('name'))
 
 
 def print_usage() -> None:
+    print(f'DLV version {VERSION}')
     print('Usage: dlv.py [OPTIONS] [URLs...]')
     print('\n')
     print('Options:')
@@ -102,7 +184,7 @@ def _init() -> None:
     global HOST
     global BACKUP_FOLDER
     global OUTPUT_FOLDER
-    config = load_config('dlv.ini')
+    config = utils.load_config()
     VERSION = config.get('version')
     HOST = config.get('host')
     BACKUP_FOLDER = config.get('backup_folder')
@@ -115,7 +197,7 @@ def _handle_argv(argv: list[str]) -> list[str]:
 
     try:
         opts, args = getopt.getopt(
-            argv, 'hvi:o:c:', ['help', 'version', 'verbose', 'input-file=', 'output-folder=', 'cookie='])
+            argv, 'hvi:o:c:t:', ['help', 'version', 'verbose', 'input-file=', 'output-folder=', 'cookie=', 'template='])
     except getopt.GetoptError:
         LOG.error('Invalid parameters! :(')
         print_usage()
@@ -130,6 +212,7 @@ def _handle_argv(argv: list[str]) -> list[str]:
     global INPUT_URLS_FILE
     global OUTPUT_FOLDER
     global COOKIE
+    global TEMPLATE
     for opt, arg in opts:
         if opt in ['-h', '--help']:
             print_usage()
@@ -151,6 +234,9 @@ def _handle_argv(argv: list[str]) -> list[str]:
         elif opt in ['-c', '--cookie']:
             LOG.info(f'Using cookie file: "{arg}"')
             COOKIE = arg
+        elif opt in ['-t', '--template']:
+            LOG.info(f'Using custom template: "{arg}"')
+            TEMPLATE = arg
         else:
             LOG.warn(f'Ignoring unknown parameter: "{opt}"="{arg}"')
 
@@ -192,8 +278,9 @@ def _get_ytdl_opts(extractor=None) -> dict:
         opts = json.load(file)
 
     # Dynamic opts
-    opts['outtmpl'] = f'{OUTPUT_FOLDER}/%(extractor)s/%(title)s - %(id)s.%(ext)s'
+    global TEMPLATE
     opts['download_archive'] = f'{HOST}-archive.txt'
+    opts['outtmpl'] = f'{OUTPUT_FOLDER}/%(extractor)s/%(title)s - %(id)s.%(ext)s' if TEMPLATE is None else f'{OUTPUT_FOLDER}/{TEMPLATE}'
 
     # TODO Get cookies from centralized location
     if COOKIE:
@@ -208,34 +295,21 @@ def _get_ytdl_opts(extractor=None) -> dict:
     return opts
 
 
-def write_file(content, folder: str, filename: str, is_json=False) -> None:
-    """Writes an Object to a file system."""
-    LOG.info(f'Saving file: {filename}')
-    output_text = None
-
-    if is_json or isinstance(content, dict):
-        output_text = json.dumps(content, indent=4)
-    elif isinstance(content, str):
-        output_text = content
-    elif isinstance(content, list):
-        output_text = '\n'.join(content)
-    else:
-        LOG.warning(f'Content type is not recognized: {type(content)}!')
-        output_text = content
-
-    with open(f'{folder}/{filename}', 'w', encoding='utf-8') as f:
-        f.write(output_text)
-
-
 def print_summary() -> None:
-    LOG.info(f'--------------------------------------------------')
+    global VERSION
+    global BACKUP_FOLDER
+    global OUTPUT_FOLDER
+    global SUCCESS
+    global FAILURES
+    global COUNTER
+
+    LOG.info(f'- SUMMARY ----------------------------------------')
     LOG.info(f'DLV VERSION    {VERSION}')
     LOG.info(f'BACKUP_FOLDER  {BACKUP_FOLDER}')
     LOG.info(f'OUTPUT_FOLDER  {OUTPUT_FOLDER}')
     LOG.info(f'SUCCESS        {len(SUCCESS)}')
     LOG.info(f'FAILURES       {len(FAILURES)}')
     LOG.info(f'TOTAL          {COUNTER}')
-    LOG.info(f'--------------------------------------------------')
 
 
 if __name__ == "__main__":

@@ -8,49 +8,53 @@ import re
 import logging
 import logging.config
 from datetime import datetime
-from nnlk.commons.utils import load_config
+import nnlk.commons.utils as utils
+from nnlk.commons.constants import UNDERSCORE_DATE
 
-logging.config.fileConfig('logger.ini')
-LOG = logging.getLogger('FINDER')
-
-# Script constans
-OK = 'OK'
-ERROR = 'ERROR'
+LOG = utils.get_logger('FINDER')
 
 # Script variables
+EXEC_TIME = datetime.now().strftime(UNDERSCORE_DATE)
 QUERY = None
-EXEC_TIME = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
+SEARCH_PATH = None
 
 # Config variables
 HOST = None
+DEFAULT_QUERY = '.'
+DEFAULT_SEARCH_PATH = None
 
 
 def main(argv: list[str]) -> None:
     """Entry point for FINDER command-line"""
+    global QUERY
+    global SEARCH_PATH
     _init()
     _handle_argv(argv)
-    response = search(QUERY)
+    results = search(QUERY, SEARCH_PATH)
 
-    if response.get('status') == ERROR:
-        LOG.error(f'An error occured while searching for: "{QUERY}" :(')
-        LOG.error(response.get('error'))
-    elif response.get('entries', 0) < 1:
+    if len(results) < 1:
         LOG.info(f'No results found for: "{QUERY}" :(')
     else:
-        for result in response.get('results'):
-            print(result.get('name'))
+        print_results(results)
 
 
 def _init() -> None:
-    """Initializes default config"""
+    """Initializes default script config"""
     global HOST
-    config = load_config('dlv.ini')
+    global DEFAULT_SEARCH_PATH
+    config = utils.load_config()
     HOST = config.get('host')
+    DEFAULT_SEARCH_PATH = config.get('output_folder')
 
 
 def _handle_argv(argv: list[str]) -> None:
+    global SEARCH_PATH
+    global QUERY
+
     try:
-        opts, args = getopt.getopt(argv, 'hv', ['help', 'verbose'])
+        # TODO - Add output file to save results into
+        opts, args = getopt.getopt(
+            argv, 'hvp:', ['help', 'verbose', 'search-path='])
     except getopt.GetoptError:
         LOG.error('Invalid parameters! :(')
         print_usage()
@@ -65,19 +69,16 @@ def _handle_argv(argv: list[str]) -> None:
             LOG.setLevel(logging.DEBUG)
             for handler in LOG.handlers:
                 handler.setLevel(logging.DEBUG)
+        elif opt in ['-p', '--search-path']:
+            SEARCH_PATH = arg
         else:
             LOG.warn(f'Ignoring unknown parameter: "{opt}"="{arg}"')
 
-    global QUERY
-    if not args:
-        LOG.error('Query parameter missing! :(')
-        print_usage()
-        sys.exit(1)
-    elif len(args) > 1:
+    if len(args) > 1:
         LOG.error('Only one query parameter is allowed! :(')
         print_usage()
         sys.exit(1)
-    else:
+    elif len(args) == 1:
         QUERY = args[0]
 
 
@@ -89,38 +90,45 @@ def print_usage() -> None:
     print('  -v, --verbose                      Print debugging information')
 
 
-def search(query) -> dict[str, any]:
-    status = OK
-    pattern = None
-    results = []
-    error = None
-    config = load_config('dlv.ini') # TODO move this to _init
-    search_path = config.get('output_folder') # TODO move this to _init
+def search(query=None, search_path=None) -> list[dict[str, any]]:
+    if not query:
+        query = DEFAULT_QUERY
+    if not search_path:
+        search_path = DEFAULT_SEARCH_PATH
 
-    # TODO validate search_path
-
-    LOG.debug(f'Searching for "{query}" in "{search_path}"')
     try:
         pattern = re.compile(query, re.IGNORECASE)
-    except Exception as e:
-        LOG.error(f'An exception occurred with query "{query}": "{e}"')
-        status = ERROR
-        error = str(e)
+        pure_path = Path(search_path)
+        if not pure_path.exists() or not pure_path.is_dir():
+            raise Exception()
+    except re.error as e:
+        LOG.error(f'Invalid query "{query}": "{e}" :(')
+    except Exception:
+        LOG.error(f'Invalid search path: "{str(pure_path)}"')
+    else:
+        return [build_result(path) for path in pure_path.rglob('*') if path.is_file() and re.search(pattern, path.name)]
 
-    for path in Path(search_path).rglob('*'):
-        if path.is_file() and re.search(pattern, path.name):
-            # TODO Add more properties to file
-            file = {
-                'name': path.name
-            }
-            results.append(file)
-    # TODO return only results or error, other props should be set in dlv-ws
+
+def build_result(path: Path) -> dict[str, any]:
+    stat = path.stat()
     return {
-        'status': status,
-        'error': error,
-        'entries': len(results),
-        'results': results
+        'name': path.name,
+        'suffix': path.suffix,
+        'path': str(path.parent),
+        'size': stat.st_size,
+        'created': datetime.fromtimestamp(stat.st_ctime).strftime('%m/%d/%Y %H:%M:%S')
     }
+
+
+def print_results(results: list) -> None:
+    # TODO
+    #  - Documentation
+    #  - Fix UTF-8 print in Widows:
+    #      sys.stdout.reconfigure(encoding='utf-8')
+    #      result.get('name').encode('utf-8')
+    #      Run CHCP 65001 in cmd
+    for result in results:
+        print(result.get('name'))
 
 
 if __name__ == "__main__":
