@@ -12,7 +12,7 @@ import configparser
 PATH = Path(__file__)
 CURRENT_DIRECTORY = f'{PATH.parent}'
 NNLK_CONFIG = os.path.join(PATH.parent.parent, 'nnlk.ini')
-NNLK_LOG = os.path.join(PATH.parent.parent, 'logs', 'nnlk.log')
+NNLK_LOG = os.path.join(PATH.parent.parent, 'logs', 'nnlk.log') # TODO Automatically create logs folder if missing
 LOG_CONFIG = os.path.join(CURRENT_DIRECTORY, 'logger.ini')
 
 logging.config.fileConfig(LOG_CONFIG, defaults={

@@ -8,7 +8,7 @@ import logging.config
 import validators
 import json
 from datetime import datetime
-from youtube_dl import YoutubeDL
+from yt_dlp import YoutubeDL
 import nnlk.commons.utils as utils
 from nnlk.commons.constants import UNDERSCORE_DATE
 import nnlk.dlv.finder as finder
@@ -172,6 +172,7 @@ def print_usage() -> None:
     print('  -i, --input-file FILE_PATH         Override default input file to FILE_PATH')
     print('  -o, --output-folder FOLDER_PATH    Override default output folder to FOLDER_PATH')
     print('  -c, --cookie FILE_PATH             Set the cookie file to use')
+    # TODO Add -t/--template parameter
 
 
 def print_version() -> None:
@@ -274,6 +275,7 @@ def load_urls() -> list[str]:
 def _get_ytdl_opts(extractor=None) -> dict:
     LOG.debug('Getting YouTubeDL options')
     opts = None
+    # TODO Update opts.json to use 'all-subs' and 'sub-format' => "best"
     with open('opts.json') as file:
         opts = json.load(file)
 
